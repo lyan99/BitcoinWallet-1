@@ -35,13 +35,13 @@ import java.awt.event.*;
 public class SendDialog extends JDialog implements ActionListener {
 
     /** Address field */
-    private JComboBox<Object> addressField;
+    private final JComboBox<Object> addressField;
 
     /** Amount field */
-    private JTextField amountField;
+    private final JTextField amountField;
 
     /** Fee field */
-    private JTextField feeField;
+    private final JTextField feeField;
 
     /** Send sendAddress */
     private Address sendAddress;

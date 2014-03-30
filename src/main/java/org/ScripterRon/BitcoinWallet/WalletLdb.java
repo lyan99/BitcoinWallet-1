@@ -738,7 +738,7 @@ public class WalletLdb extends Wallet {
         List<ReceiveTransaction> txList = new LinkedList<>();
         synchronized(lock) {
             try {
-                Map<Sha256Hash, ReceiveTransaction> prevMap = new HashMap<>();
+                Map<TransactionID, ReceiveTransaction> prevMap = new HashMap<>();
                 try (DBIterator it = dbReceived.iterator()) {
                     it.seekToFirst();
                     while (it.hasNext()) {
@@ -754,16 +754,17 @@ public class WalletLdb extends Wallet {
                                                     rcvEntry.getValue(), rcvEntry.getScriptBytes(),
                                                     rcvEntry.isSpent(), rcvEntry.isChange(),
                                                     rcvEntry.isCoinBase(), rcvEntry.inSafe());
-                        ReceiveTransaction prevTx = prevMap.get(tx.getNormalizedID());
+                        TransactionID normTxID = new TransactionID(tx.getNormalizedID(), txID.getTxIndex());
+                        ReceiveTransaction prevTx = prevMap.get(normTxID);
                         if (prevTx != null) {
                             if (!tx.getBlockHash().equals(Sha256Hash.ZERO_HASH)) {
                                 txList.remove(prevTx);
                                 txList.add(tx);
-                                prevMap.put(tx.getNormalizedID(), tx);
+                                prevMap.put(normTxID, tx);
                             }
                         } else {
                             txList.add(tx);
-                            prevMap.put(tx.getNormalizedID(), tx);
+                            prevMap.put(normTxID, tx);
                         }
                     }
                 }
