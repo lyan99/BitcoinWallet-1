@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.ScripterRon</groupId>
     <artifactId>BitcoinWallet</artifactId>
-    <version>1.4</version>
+    <version>1.5</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -11,7 +11,7 @@
         <maven.compiler.target>1.7</maven.compiler.target>
     </properties>
     <name>Java Bitcoin Wallet</name>
-    <url>https://github.com/ScripterRon/JavaBitcoin</url>
+    <url>https://github.com/ScripterRon/BitcoinWallet</url>
     <description>BitcoinWallet is a bitcoin wallet written in Java.  It supports receiving and
 sending coins as well as signing and verifying messages.
     </description>
@@ -155,7 +155,7 @@ sending coins as well as signing and verifying messages.
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>BitcoinCore</artifactId>
-            <version>1.0</version>
+            <version>1.1</version>
             <type>jar</type>
         </dependency>
     </dependencies>
