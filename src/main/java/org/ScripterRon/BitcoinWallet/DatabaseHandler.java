@@ -181,6 +181,8 @@ public class DatabaseHandler implements Runnable {
                     if (rescanHeight > Parameters.wallet.getChainHeight()) {
                         rescanHeight = 0;
                         log.info("Block rescan completed");
+                        for (WalletListener listener : listeners)
+                            listener.rescanCompleted();
                     } else {
                         Sha256Hash nextHash = Parameters.wallet.getBlockHash(rescanHeight);
                         PeerRequest request = new PeerRequest(nextHash, NetParams.INV_FILTERED_BLOCK);
@@ -188,7 +190,6 @@ public class DatabaseHandler implements Runnable {
                             Parameters.pendingRequests.add(request);
                         }
                         Parameters.networkHandler.wakeup();
-                        log.info(String.format("Block chain rescan continuing at height %d", rescanHeight));
                     }
                 } else if (Parameters.networkChainHeight > Parameters.wallet.getChainHeight()) {
                     //

@@ -49,6 +49,9 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
 
     /** Rebroadcast pending transactions */
     private boolean txBroadcastDone = false;
+    
+    /** Rescanning block chain */
+    private boolean rescanChain = false;
 
     /** Transaction panel */
     private final TransactionPanel transactionPanel;
@@ -286,7 +289,8 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
             @Override
             public void run() {
                 transactionPanel.statusChanged();
-                if (synchronizingTitle && Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
+                if (synchronizingTitle && !rescanChain &&
+                            Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
                     synchronizingTitle = false;
                     setTitle("Bitcoin Wallet");
                 }
@@ -303,6 +307,28 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
             @Override
             public void run() {
                 transactionPanel.walletChanged();
+            }
+        });
+    }
+    
+    /**
+     * Notification when a block chain rescan is completed
+     */
+    @Override
+    public void rescanCompleted() {
+        //
+        // Update the table status column for any new transactions.  Indicate we are
+        // no longer synchronizing with the network if we are now caught up.
+        //
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                rescanChain = false;
+                transactionPanel.statusChanged();
+                if (synchronizingTitle && Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
+                    synchronizingTitle = false;
+                    setTitle("Bitcoin Wallet");
+                }
             }
         });
     }
@@ -542,9 +568,14 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         for (ECKey key : Parameters.keys)
             creationTime = Math.min(creationTime, key.getCreationTime());
         //
+        // Indicate we are synchronizing with the network
+        //
+        synchronizingTitle = true;
+        rescanChain = true;
+        setTitle("Bitcoin Wallet - Synchronizing with network");
+        //
         // Initiate a block chain rescan
         //
-        log.info(String.format("Block chain rescan started from time %d", creationTime));
         Parameters.databaseHandler.rescanChain(creationTime);
     }
 
