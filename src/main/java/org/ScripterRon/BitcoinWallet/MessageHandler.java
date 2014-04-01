@@ -94,6 +94,7 @@ public class MessageHandler implements Runnable {
         PeerAddress address = null;
         String cmd = null;
         int reasonCode = 0;
+        int cmdOp = 0;
         try {
             peer = msg.getPeer();
             address = peer.getAddress();
@@ -106,9 +107,8 @@ public class MessageHandler implements Runnable {
             //
             cmd = MessageHeader.processMessage(inStream, msgBytes);
             Integer cmdLookup = MessageHeader.cmdMap.get(cmd);
-            int cmdOp;
             if (cmdLookup != null)
-                cmdOp = cmdLookup.intValue();
+                cmdOp = cmdLookup;
             else
                 cmdOp = 0;
             msg.setCommand(cmdOp);
@@ -213,6 +213,8 @@ public class MessageHandler implements Runnable {
                                     cmd!=null ? cmd : "N/A",
                                     address.toString()), exc);
             reasonCode = NetParams.REJECT_MALFORMED;
+            if (cmdOp == MessageHeader.VERSION_CMD)
+                peer.setDisconnect(true);
             if (peer.getVersion() >= 70002) {
                 Message rejectMsg = RejectMessage.buildRejectMessage(peer, cmd, reasonCode, exc.getMessage());
                 msg.setBuffer(rejectMsg.getBuffer());
@@ -222,6 +224,8 @@ public class MessageHandler implements Runnable {
             log.error(String.format("Message verification failed for '%s' message from %s\n  %s\n  %s",
                                     cmd!=null ? cmd : "N/A",
                                     address.toString(), exc.getMessage(), exc.getHash().toString()));
+            if (cmdOp == MessageHeader.VERSION_CMD)
+                peer.setDisconnect(true);
             reasonCode = exc.getReason();
             if (peer.getVersion() >= 70002) {
                 Message rejectMsg = RejectMessage.buildRejectMessage(peer, cmd, reasonCode,
