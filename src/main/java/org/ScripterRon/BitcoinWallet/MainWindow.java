@@ -574,6 +574,11 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         rescanChain = true;
         setTitle("Bitcoin Wallet - Synchronizing with network");
         //
+        // Delete existing transactions
+        //
+        Parameters.wallet.deleteTransactions(creationTime);
+        transactionPanel.walletChanged();
+        //
         // Initiate a block chain rescan
         //
         Parameters.databaseHandler.rescanChain(creationTime);

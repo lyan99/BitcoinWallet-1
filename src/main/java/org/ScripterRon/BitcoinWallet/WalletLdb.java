@@ -941,6 +941,51 @@ public class WalletLdb extends Wallet {
         }
         return txDepth;
     }
+    
+    /**
+     * Deletes all transactions later than the rescan time
+     * @param       rescanTime              Rescan time in seconds
+     * @throws      WalletException         Unable to delete transactions
+     */
+    @Override
+    public void deleteTransactions(long rescanTime) throws WalletException {
+        try {
+            Entry<byte[], byte[]> dbEntry;
+            List<byte[]> purgeList = new ArrayList<>(50);
+            //
+            // Delete all received transactions
+            //
+            try (DBIterator it = dbReceived.iterator()) {
+                it.seekToFirst();
+                while (it.hasNext()) {
+                    dbEntry = it.next();
+                    ReceiveEntry rcvEntry = new ReceiveEntry(dbEntry.getValue());
+                    if (rcvEntry.getTxTime() >= rescanTime)
+                        purgeList.add(dbEntry.getKey());
+                }
+            }
+            for (byte[] key : purgeList)
+                dbReceived.delete(key);
+            //
+            // Delete all sent transactions
+            //
+            purgeList.clear();
+            try (DBIterator it = dbSent.iterator()) {
+                it.seekToFirst();
+                while (it.hasNext()) {
+                    dbEntry = it.next();
+                    SendEntry sendEntry = new SendEntry(dbEntry.getValue());
+                    if (sendEntry.getTxTime() >= rescanTime)
+                        purgeList.add(dbEntry.getKey());
+                }
+            }
+            for (byte[] key : purgeList)
+                dbSent.delete(key);
+        } catch (DBException | IOException exc) {
+            log.error("Unable to delete transactions", exc);
+            throw new WalletException("Unable to delete transactions");
+        }
+    }
 
     /**
      * Locates the junction where the chain represented by the specified block joins

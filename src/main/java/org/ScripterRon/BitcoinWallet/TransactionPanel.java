@@ -210,7 +210,7 @@ public class TransactionPanel extends JPanel implements ActionListener {
     public void walletChanged() {
         int row = table.getSelectedRow();
         tableModel.walletChanged();
-        if (row >= 0)
+        if (row >= 0 && row < table.getRowCount())
             table.setRowSelectionInterval(row, row);
         walletLabel.setText(getWalletText());
         safeLabel.setText(getSafeText());

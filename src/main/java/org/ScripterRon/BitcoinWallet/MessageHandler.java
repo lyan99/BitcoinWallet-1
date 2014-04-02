@@ -112,7 +112,6 @@ public class MessageHandler implements Runnable {
             else
                 cmdOp = 0;
             msg.setCommand(cmdOp);
-            log.info(String.format("Received '%s' message from %s", cmd, address.toString()));
             //
             // Process the message
             //
