@@ -33,16 +33,16 @@ public class Parameters {
     public static final int DEFAULT_PORT = 8333;
 
     /** Software identifier */
-    public static String SOFTWARE_NAME = "/BitcoinWallet:1.3/";
+    public static String SOFTWARE_NAME = "BitcoinWallet:?.?";
 
     /** Genesis block bytes */
     public static byte[] GENESIS_BLOCK_BYTES;
 
     /** Minimum transaction fee */
-    public static final BigInteger MIN_TX_FEE = new BigInteger("10000", 10);
+    public static final BigInteger MIN_TX_FEE = new BigInteger("1000", 10);
 
     /** Dust transaction value */
-    public static final BigInteger DUST_TRANSACTION = new BigInteger("5460", 10);
+    public static final BigInteger DUST_TRANSACTION = new BigInteger("546", 10);
 
     /** Maximum ban score before a peer is disconnected */
     public static final int MAX_BAN_SCORE = 100;
