@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -199,9 +200,18 @@ public class MessageHandler implements Runnable {
                     break;
                 case MessageHeader.REJECT_CMD:
                     //
-                    // Process the 'reject' command
+                    // Process the 'reject' message
                     //
                     RejectMessage.processRejectMessage(msg, inStream, Parameters.inventoryHandler);
+                    break;
+                case MessageHeader.ALERT_CMD:
+                    //
+                    // Process the 'alert' message
+                    //
+                    Alert alert = AlertMessage.processAlertMessage(msg, inStream);
+                    if (alert.getExpireTime() > System.currentTimeMillis()/1000)
+                        log.warn(String.format("**** Alert %d ****\n  %s",
+                                               alert.getID(), alert.getMessage()));
                     break;
                 default:
                     log.error(String.format("Unrecognized '%s' message from %s", cmd, address.toString()));
