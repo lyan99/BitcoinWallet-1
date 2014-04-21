@@ -490,20 +490,24 @@ public class TransactionPanel extends JPanel implements ActionListener {
                     break;
                 case 7:                                 // Status
                     try {
-                        int depth = Parameters.wallet.getTxDepth(tx.getTxHash());
-                        if ((tx instanceof ReceiveTransaction) && ((ReceiveTransaction)tx).isCoinBase()) {
-                            if (depth == 0)
-                                value = "Pending";
-                            else if (depth < Parameters.COINBASE_MATURITY)
-                                value = "Immature";
-                            else
-                                value = "Mature";
-                        } else if (depth == 0) {
-                            value = "Pending";
-                        } else if (depth < Parameters.TRANSACTION_CONFIRMED) {
-                            value = "Building";
+                        if (tx instanceof ReceiveTransaction && ((ReceiveTransaction)tx).isSpent()) {
+                            value = "Spent";
                         } else {
-                            value = "Confirmed";
+                            int depth = Parameters.wallet.getTxDepth(tx.getTxHash());
+                            if ((tx instanceof ReceiveTransaction) && ((ReceiveTransaction)tx).isCoinBase()) {
+                                if (depth == 0)
+                                    value = "Pending";
+                                else if (depth < Parameters.COINBASE_MATURITY)
+                                    value = "Immature";
+                                else
+                                    value = "Mature";
+                            } else if (depth == 0) {
+                                value = "Pending";
+                            } else if (depth < Parameters.TRANSACTION_CONFIRMED) {
+                                value = "Building";
+                            } else {
+                                value = "Confirmed";
+                            }
                         }
                     } catch (WalletException exc) {
                         Main.logException("Unable to get transaction depth", exc);
