@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.ScripterRon</groupId>
     <artifactId>BitcoinWallet</artifactId>
-    <version>1.5</version>
+    <version>1.6</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -155,7 +155,7 @@ sending coins as well as signing and verifying messages.
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>BitcoinCore</artifactId>
-            <version>1.1</version>
+            <version>1.2</version>
             <type>jar</type>
         </dependency>
     </dependencies>
