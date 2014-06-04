@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -347,7 +346,7 @@ public abstract class Wallet {
      * @throws      WalletException         Unable to get transaction depth
      */
     public abstract int getTxDepth(Sha256Hash txHash) throws WalletException;
-    
+
     /**
      * Deletes all transactions later than the rescan time
      * @param       rescanTime              Rescan time in seconds

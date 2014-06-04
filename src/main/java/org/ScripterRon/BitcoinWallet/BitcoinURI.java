@@ -18,14 +18,11 @@ package org.ScripterRon.BitcoinWallet;
 import org.ScripterRon.BitcoinCore.*;
 
 import java.io.UnsupportedEncodingException;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 
 /**
  * A bitcoin URI has the format bitcoin:address?param1&param2&param3...

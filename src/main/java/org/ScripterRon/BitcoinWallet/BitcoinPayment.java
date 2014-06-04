@@ -29,13 +29,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.IOException;
-
 import java.math.BigInteger;
-
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-
 import java.security.cert.CertPath;
 import java.security.cert.CertPathValidator;
 import java.security.cert.CertPathValidatorException;
@@ -44,7 +41,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXCertPathValidatorResult;
 import java.security.cert.PKIXParameters;
 import java.security.cert.X509Certificate;
-
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
@@ -53,12 +49,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
-
-import javax.security.auth.x500.X500Principal;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import javax.security.auth.x500.X500Principal;
 
 /**
  * A bitcoin payment request is created by a merchant when a customer purchases an item.  The merchant
@@ -317,8 +311,7 @@ public class BitcoinPayment {
                     int dupCount = 0;
                     while (!valid) {
                         valid = true;
-                        for (int i=0; i<Parameters.addresses.size(); i++) {
-                            Address chkAddr = Parameters.addresses.get(i);
+                        for (Address chkAddr : Parameters.addresses) {
                             if (chkAddr.getLabel().compareToIgnoreCase(label) == 0) {
                                 label = label.substring(0, length)+String.format("(%d)", ++dupCount);
                                 valid = false;

@@ -26,16 +26,16 @@ import java.awt.event.*;
 public class VerifyDialog extends JDialog implements ActionListener {
 
     /** Address field */
-    private JTextField addressField;
+    private final JTextField addressField;
 
     /** Message field */
-    private JTextArea messageField;
+    private final JTextArea messageField;
 
     /** Message scroll pane */
-    private JScrollPane scrollPane;
+    private final JScrollPane scrollPane;
 
     /** Signature field */
-    private JTextField signatureField;
+    private final JTextField signatureField;
 
     /**
      * Create the dialog

@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -32,7 +31,7 @@ public class WalletInventoryHandler implements InventoryHandler {
 
     /** Create our logger */
     private static final Logger log = LoggerFactory.getLogger(WalletInventoryHandler.class);
-    
+
     /** Reject message reason codes */
     private static final Map<Integer, String> reasonCodes = new HashMap<>();
     static {
@@ -136,12 +135,12 @@ public class WalletInventoryHandler implements InventoryHandler {
             }
         }
     }
-    
+
     /**
-     * Processes a request that was returned by the peer because the inventory item was 
+     * Processes a request that was returned by the peer because the inventory item was
      * not found.  The request can be discarded or retried by sending it to a different
      * peer.  This method is called when a 'notfound' message is processed.
-     * 
+     *
      * @param       peer            Peer sending the response
      * @param       type            Type of inventory item (INV_BLOCK or INV_TX)
      * @param       hash            Item hash
@@ -175,11 +174,11 @@ public class WalletInventoryHandler implements InventoryHandler {
             log.error("Thread interrupted while adding to database handler queue", exc);
         }
     }
-    
+
     /**
      * Processes a transaction received from a remote peer.  This method is
      * called when a 'tx' message is processed
-     * 
+     *
      * @param       tx              Transaction
      */
     @Override
@@ -190,11 +189,11 @@ public class WalletInventoryHandler implements InventoryHandler {
             log.error("Thread interrupted while adding to database handler queue", exc);
         }
     }
-    
+
     /**
      * Processes a rejection from a peer.  This method is called when a 'reject'
      * message is processed.
-     * 
+     *
      * @param       peer            Peer sending the message
      * @param       cmd             Failing message command
      * @param       reasonCode      Failure reason code
@@ -208,6 +207,6 @@ public class WalletInventoryHandler implements InventoryHandler {
             reason = "N/A";
         log.error(String.format("Message rejected by %s\n  Command %s, Reason %s - %s\n  %s",
                                 peer.getAddress().toString(), cmd, reason, description,
-                                hash.toString()));        
+                                hash.toString()));
     }
 }

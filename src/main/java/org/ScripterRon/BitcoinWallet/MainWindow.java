@@ -25,13 +25,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.*;
 
 /**
  * This is the main application window
@@ -49,7 +47,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
 
     /** Rebroadcast pending transactions */
     private boolean txBroadcastDone = false;
-    
+
     /** Rescanning block chain */
     private boolean rescanChain = false;
 
@@ -231,11 +229,8 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         //
         if (!synchronizingTitle && Parameters.networkChainHeight > Parameters.wallet.getChainHeight()) {
             synchronizingTitle = true;
-            javax.swing.SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    setTitle("Bitcoin Wallet - Synchronizing with network");
-                }
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                setTitle("Bitcoin Wallet - Synchronizing with network");
             });
         }
         //
@@ -285,15 +280,12 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         // Update the table status column for the new chain depth.  Indicate we are
         // no longer synchronizing with the network if we are now caught up.
         //
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                transactionPanel.statusChanged();
-                if (synchronizingTitle && !rescanChain &&
-                            Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
-                    synchronizingTitle = false;
-                    setTitle("Bitcoin Wallet");
-                }
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            transactionPanel.statusChanged();
+            if (synchronizingTitle && !rescanChain &&
+                    Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
+                synchronizingTitle = false;
+                setTitle("Bitcoin Wallet");
             }
         });
     }
@@ -303,14 +295,11 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
      */
     @Override
     public void txUpdated() {
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                transactionPanel.walletChanged();
-            }
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            transactionPanel.walletChanged();
         });
     }
-    
+
     /**
      * Notification when a block chain rescan is completed
      */
@@ -320,15 +309,12 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         // Update the table status column for any new transactions.  Indicate we are
         // no longer synchronizing with the network if we are now caught up.
         //
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                rescanChain = false;
-                transactionPanel.statusChanged();
-                if (synchronizingTitle && Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
-                    synchronizingTitle = false;
-                    setTitle("Bitcoin Wallet");
-                }
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            rescanChain = false;
+            transactionPanel.statusChanged();
+            if (synchronizingTitle && Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
+                synchronizingTitle = false;
+                setTitle("Bitcoin Wallet");
             }
         });
     }
@@ -659,7 +645,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
     private class ApplicationWindowListener extends WindowAdapter {
 
         /** Application window */
-        private JFrame window;
+        private final JFrame window;
 
         /**
          * Create the window listener

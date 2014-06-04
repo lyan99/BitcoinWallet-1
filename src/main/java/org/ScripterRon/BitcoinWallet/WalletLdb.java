@@ -27,11 +27,8 @@ import org.fusesource.leveldbjni.JniDBFactory;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.File;
-
 import java.math.BigInteger;
-
 import java.nio.charset.Charset;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -941,7 +938,7 @@ public class WalletLdb extends Wallet {
         }
         return txDepth;
     }
-    
+
     /**
      * Deletes all transactions later than the rescan time
      * @param       rescanTime              Rescan time in seconds

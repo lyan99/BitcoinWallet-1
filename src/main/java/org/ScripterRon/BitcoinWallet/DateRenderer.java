@@ -29,7 +29,7 @@ import javax.swing.table.*;
 public final class DateRenderer extends DefaultTableCellRenderer {
 
     /** Gregorian calendar */
-    private GregorianCalendar cal;
+    private final GregorianCalendar cal;
 
     /**
      * Create a date renderer

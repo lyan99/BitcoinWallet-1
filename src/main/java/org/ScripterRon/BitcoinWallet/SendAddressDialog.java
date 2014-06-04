@@ -47,13 +47,13 @@ public class SendAddressDialog extends JDialog implements ActionListener {
         SizedTable.NAME, SizedTable.ADDRESS};
 
     /** Address table model */
-    private AddressTableModel tableModel;
+    private final AddressTableModel tableModel;
 
     /** Address table */
-    private JTable table;
+    private final JTable table;
 
     /** Address table scroll pane */
-    private JScrollPane scrollPane;
+    private final JScrollPane scrollPane;
 
     /**
      * Create the dialog
@@ -68,7 +68,7 @@ public class SendAddressDialog extends JDialog implements ActionListener {
         //
         tableModel = new AddressTableModel(columnNames, columnClasses);
         table = new SizedTable(tableModel, columnTypes);
-        table.setRowSorter(new TableRowSorter<TableModel>(tableModel));
+        table.setRowSorter(new TableRowSorter<>(tableModel));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         //
         // Create the table scroll pane
@@ -222,16 +222,12 @@ public class SendAddressDialog extends JDialog implements ActionListener {
             String label = addr.getLabel();
             boolean valid = true;
             synchronized(Parameters.lock) {
-                //
-                // First pass checks for a duplicate label
-                //
-                for (int i=0; i<Parameters.addresses.size(); i++) {
-                    Address chkAddr = Parameters.addresses.get(i);
+                for (Address chkAddr : Parameters.addresses) {
                     if (chkAddr.equals(address))
                         continue;
                     if (chkAddr.getLabel().compareToIgnoreCase(label) == 0) {
                         JOptionPane.showMessageDialog(this, "Duplicate name specified", "Error",
-                                                      JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.ERROR_MESSAGE);
                         valid = false;
                         break;
                     }

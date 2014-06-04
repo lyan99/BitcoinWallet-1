@@ -20,16 +20,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Inet4Address;
 import java.net.StandardSocketOptions;
 import java.net.UnknownHostException;
-
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -249,7 +246,7 @@ public class NetworkHandler implements Runnable {
                 if (currentTime > lastConnectionCheckTime+5*60) {
                     lastConnectionCheckTime = currentTime;
                     List<Peer> inactiveList = new LinkedList<>();
-                    for (Peer chkPeer : connections) {
+                    connections.stream().forEach((chkPeer) -> {
                         PeerAddress chkAddress = chkPeer.getAddress();
                         if (chkAddress.getTimeStamp() < currentTime-10*60) {
                             inactiveList.add(chkPeer);
@@ -267,20 +264,21 @@ public class NetworkHandler implements Runnable {
                                 }
                             }
                         }
-                    }
-                    //
-                    // Close inactive connections and remove the peer from the address list
-                    //
-                    for (Peer chkPeer : inactiveList) {
+                    });
+                    inactiveList.stream().map((chkPeer) -> {
                         log.info(String.format("Closing connection due to inactivity: %s",
-                                               chkPeer.getAddress().toString()));
+                                chkPeer.getAddress().toString()));
+                        return chkPeer;
+                    }).map((chkPeer) -> {
                         closeConnection(chkPeer);
+                        return chkPeer;
+                    }).forEach((chkPeer) -> {
                         synchronized(Parameters.lock) {
                             PeerAddress chkAddress = chkPeer.getAddress();
                             Parameters.peerMap.remove(chkAddress);
                             Parameters.peerAddresses.remove(chkAddress);
                         }
-                    }
+                    });
                 }
                 //
                 // Create a new outbound connection if we have less than the
@@ -315,13 +313,9 @@ public class NetworkHandler implements Runnable {
         synchronized(Parameters.lock) {
             listeners.add(listener);
         }
-        //
-        // Notify the new listener of existing connections
-        //
-        for (Peer peer : connections) {
-            if (peer.getVersionCount() > 2)
-                listener.connectionStarted(peer);
-        }
+        connections.stream().filter((peer) -> (peer.getVersionCount() > 2)).forEach((peer) -> {
+            listener.connectionStarted(peer);
+        });
     }
 
     /**
@@ -375,13 +369,12 @@ public class NetworkHandler implements Runnable {
         // Send the message to each connected peer
         //
         synchronized(Parameters.lock) {
-            for (Peer relayPeer : connections) {
-                if (relayPeer.getVersionCount() < 2)
-                    continue;
+            connections.stream().filter((relayPeer) -> !(relayPeer.getVersionCount() < 2)).map((relayPeer) -> {
                 relayPeer.getOutputList().add(msg.clone(relayPeer));
-                SelectionKey relayKey = relayPeer.getKey();
+                return relayPeer;
+            }).map((relayPeer) -> relayPeer.getKey()).forEach((relayKey) -> {
                 relayKey.interestOps(relayKey.interestOps() | SelectionKey.OP_WRITE);
-            }
+            });
         }
         //
         // Wakeup the network listener to send the broadcast messages
@@ -661,8 +654,9 @@ public class NetworkHandler implements Runnable {
             // Notify listeners
             //
             if (peer.getVersionCount() > 2) {
-                for (ConnectionListener listener : listeners)
+                listeners.stream().forEach((listener) -> {
                     listener.connectionEnded(peer);
+                });
             }
             log.info(String.format("Connection closed with peer %s", address.toString()));
         } catch (IOException exc) {
@@ -744,11 +738,9 @@ public class NetworkHandler implements Runnable {
                     log.info(String.format("'getblocks' message sent to %s", address.toString()));
                     getBlocksSent = true;
                 }
-                //
-                // Notify listeners
-                //
-                for (ConnectionListener listener : listeners)
+                listeners.stream().forEach((listener) -> {
                     listener.connectionStarted(peer);
+                });
             }
         }
     }

@@ -15,11 +15,10 @@
  */
 package org.ScripterRon.BitcoinWallet;
 
+import java.awt.*;
 import java.math.BigInteger;
-
 import javax.swing.table.*;
 import javax.swing.*;
-import java.awt.*;
 
 /**
  * AmountRenderer is a cell renderer for use with a JTable column. It formats

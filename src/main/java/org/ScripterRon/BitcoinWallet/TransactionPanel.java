@@ -17,17 +17,14 @@ package org.ScripterRon.BitcoinWallet;
 import org.ScripterRon.BitcoinCore.*;
 
 import java.math.BigInteger;
-
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
-
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.Toolkit;
@@ -88,7 +85,7 @@ public class TransactionPanel extends JPanel implements ActionListener {
         //
         tableModel = new TransactionTableModel(columnNames, columnClasses);
         table = new SizedTable(tableModel, columnTypes);
-        table.setRowSorter(new TableRowSorter<TableModel>(tableModel));
+        table.setRowSorter(new TableRowSorter<>(tableModel));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         String frameSize = Main.properties.getProperty("window.main.size");
         if (frameSize != null) {
@@ -310,7 +307,7 @@ public class TransactionPanel extends JPanel implements ActionListener {
         private Class<?>[] columnClasses;
 
         /** Wallet transactions */
-        private List<WalletTransaction> txList = new LinkedList<>();
+        private final List<WalletTransaction> txList = new LinkedList<>();
 
         /**
          * Create the transaction table model

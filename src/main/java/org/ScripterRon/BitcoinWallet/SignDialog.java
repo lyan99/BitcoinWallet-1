@@ -30,16 +30,16 @@ import java.awt.Toolkit;
 public class SignDialog extends JDialog implements ActionListener {
 
     /** Name field */
-    private JComboBox<Object> nameField;
+    private final JComboBox<Object> nameField;
 
     /** Message field */
-    private JTextArea messageField;
+    private final JTextArea messageField;
 
     /** Message scroll pane */
-    private JScrollPane scrollPane;
+    private final JScrollPane scrollPane;
 
     /** Signature field */
-    private JTextField signatureField;
+    private final JTextField signatureField;
 
     /**
      * Create the dialog
@@ -56,7 +56,7 @@ public class SignDialog extends JDialog implements ActionListener {
         int index = 0;
         for (ECKey key : Parameters.keys)
             keyLabels[index++] = key.getLabel();
-        nameField = new JComboBox<Object>(keyLabels);
+        nameField = new JComboBox<>(keyLabels);
         nameField.setPreferredSize(new Dimension(200, 25));
         JPanel namePane = new JPanel();
         namePane.add(new JLabel("Key  ", JLabel.RIGHT));

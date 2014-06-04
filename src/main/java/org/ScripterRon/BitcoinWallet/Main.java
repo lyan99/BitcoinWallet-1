@@ -27,19 +27,14 @@ import java.io.FileReader;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
-
 import java.net.UnknownHostException;
-
 import java.nio.channels.FileLock;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.LogManager;
-
 import javax.swing.*;
 
 /**
@@ -49,57 +44,6 @@ import javax.swing.*;
  * transactions will not be spent).</p>
  *
  * <p>The main() method is invoked by the JVM to start the application.</p>
- *
- * <p>If no command-line arguments are provided, we will connect to the production Bitcoin network
- * using DNS discovery.</p>
- *
- * <p>The following command-line arguments are supported:</p>
- * <ul>
- * <li>Specify PROD to use the production Bitcoin network or TEST to use the regression test network.</li>
- * <li>Bitcoin URI when invoking BitcoinWallet from a web browser to handle a payment request.
- * The URI follows the PROD or TEST argument and must not contain any spaces.  This means the
- * URI must be registered to use the original URI encoding as received over the internet.</li>
- * </ul>
- *
- * <p>The following command-line options can be specified:</p>
- * <table>
- * <col width=30%/>
- * <col width=70%/>
- * <tr><td>-Dbitcoin.datadir=directory-path</td>
- * <td>Specifies the application data directory.  Application data will be stored in
- * a system-specific default directory if no data directory is specified:
- *      <ul>
- *      <li>Linux: user-home/.BitcoinWallet</li>
- *      <li>Mac: user-home/Library/Application Support/BitcoinWallet</li>
- *      <li>Windows: user-home\AppData\Roaming\BitcoinWallet</li>
- *      </ul>
- * </td></tr>
- *
- * <tr><td>-Djava.util.logging.config.file=file-path</td>
- * <td>Specifies the logger configuration file.  The logger properties will be read from 'logging.properties'
- * in the application data directory.  If this file is not found, the 'java.util.logging.config.file' system
- * property will be used to locate the logger configuration file.  If this property is not defined,
- * the logger properties will be obtained from jre/lib/logging.properties.
- *      <ul>
- *      <li>JDK FINE corresponds to the SLF4J DEBUG level</li>
- *      <li>JDK INFO corresponds to the SLF4J INFO level</li>
- *      <li>JDK WARNING corresponds to the SLF4J WARN level</li>
- *      <li>JDK SEVERE corresponds to the SLF4J ERROR level</li>
- *      </ul>
- *  </td></tr>
- * </table>
- *
- * <p>The following configuration options can be specified in BitcoinWallet.conf.  Blank lines and lines beginning
- * with '#' are ignored.</p>
- * <table>
- * <col width=30%/>
- * <col width=70%/>
- * <tr><td>connect=[address]:port</td>
- * <td>Connect to the specified peer.  The connect option can be repeated to connect to multiple peers.
- * If one or more connect options are specified, connections will be created to just the listed peers.
- * If no connect option is specified, DNS discovery will be used along with the broadcast peer addresses to create
- * outbound connections.</td></tr>
- * </table>
  */
 public class Main {
 
@@ -120,13 +64,13 @@ public class Main {
 
     /** Operating system */
     public static String osName;
-    
+
     /** Application identifier */
     public static String applicationID;
-    
+
     /** Application name */
     public static String applicationName;
-    
+
     /** Application version */
     public static String applicationVersion;
 
@@ -288,11 +232,8 @@ public class Main {
             // Start our services on the GUI thread so we can display dialogs
             //
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            javax.swing.SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    startup();
-                }
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                startup();
             });
         } catch (Exception exc) {
             logException("Exception during program initialization", exc);
@@ -687,13 +628,10 @@ public class Main {
             deferredText = text;
             deferredException = exc;
             try {
-                javax.swing.SwingUtilities.invokeAndWait(new Runnable() {
-                    @Override
-                    public void run() {
-                        Main.logException(deferredText, deferredException);
-                        deferredException = null;
-                        deferredText = null;
-                    }
+                javax.swing.SwingUtilities.invokeAndWait(() -> {
+                    Main.logException(deferredText, deferredException);
+                    deferredException = null;
+                    deferredText = null;
                 });
             } catch (Exception logexc) {
                 log.error("Unable to log exception during program initialization");

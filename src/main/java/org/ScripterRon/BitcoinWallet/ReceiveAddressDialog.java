@@ -20,7 +20,6 @@ import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
-
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.Toolkit;
@@ -47,13 +46,13 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
         SizedTable.NAME, SizedTable.ADDRESS};
 
     /** Address table model */
-    private AddressTableModel tableModel;
+    private final AddressTableModel tableModel;
 
     /** Address table */
-    private JTable table;
+    private final JTable table;
 
     /** Address table scroll pane */
-    private JScrollPane scrollPane;
+    private final JScrollPane scrollPane;
 
     /**
      * Create the dialog
@@ -68,7 +67,7 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
         //
         tableModel = new AddressTableModel(columnNames, columnClasses);
         table = new SizedTable(tableModel, columnTypes);
-        table.setRowSorter(new TableRowSorter<TableModel>(tableModel));
+        table.setRowSorter(new TableRowSorter<>(tableModel));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         //
         // Create the table scroll pane
@@ -212,11 +211,7 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
             String label = addr.getLabel();
             boolean valid = true;
             synchronized(Parameters.lock) {
-                //
-                // First pass checks for a duplicate label
-                //
-                for (int i=0; i<Parameters.keys.size(); i++) {
-                    ECKey chkKey = Parameters.keys.get(i);
+                for (ECKey chkKey : Parameters.keys) {
                     if (chkKey == key)
                         continue;
                     if (chkKey.getLabel().compareToIgnoreCase(label) == 0) {

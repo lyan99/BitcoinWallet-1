@@ -17,15 +17,13 @@ package org.ScripterRon.BitcoinWallet;
 import org.ScripterRon.BitcoinCore.*;
 
 import java.io.IOException;
-
 import java.math.BigInteger;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Iterator;
 
 /**
  * SendDialog will create a new transaction to send coins to a specified recipient.  Transactions in the safe and
@@ -70,7 +68,7 @@ public class SendDialog extends JDialog implements ActionListener {
             int index = 0;
             for (Address addr : Parameters.addresses)
                 addrList[index++] = addr.getLabel();
-            addressField = new JComboBox<Object>(addrList);
+            addressField = new JComboBox<>(addrList);
         }
         addressField.setEditable(true);
         addressField.setSelectedIndex(-1);

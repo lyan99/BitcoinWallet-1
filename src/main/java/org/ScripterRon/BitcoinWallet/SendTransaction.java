@@ -26,10 +26,10 @@ import java.math.BigInteger;
 public class SendTransaction extends WalletTransaction {
 
     /** Transaction fee */
-    private BigInteger fee;
+    private final BigInteger fee;
 
     /** Serialized transaction */
-    private byte[] txData;
+    private final byte[] txData;
 
     /**
      * Creates a SendTransaction

@@ -57,12 +57,8 @@ public class BuildInputList {
         //
         // Sort the unspent outputs based on their value
         //
-        Collections.sort(txList, new Comparator<ReceiveTransaction>() {
-            @Override
-            public int compare(ReceiveTransaction rcv1, ReceiveTransaction rcv2) {
-                return rcv1.getValue().compareTo(rcv2.getValue());
-            }
-        });
+        Collections.sort(txList, (ReceiveTransaction rcv1, ReceiveTransaction rcv2) ->
+                                  rcv1.getValue().compareTo(rcv2.getValue()));
         //
         // Build the list of signed inputs
         //

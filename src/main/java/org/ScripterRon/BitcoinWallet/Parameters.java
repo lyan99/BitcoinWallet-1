@@ -17,7 +17,6 @@ package org.ScripterRon.BitcoinWallet;
 import org.ScripterRon.BitcoinCore.*;
 
 import java.math.BigInteger;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,7 +81,7 @@ public class Parameters {
 
     /** Database handler */
     public static DatabaseHandler databaseHandler;
-    
+
     /** Inventory handler */
     public static InventoryHandler inventoryHandler;
 
