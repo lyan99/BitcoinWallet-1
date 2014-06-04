@@ -23,7 +23,6 @@ import java.util.List;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.Iterator;
 
 /**
  * SendDialog will create a new transaction to send coins to a specified recipient.  Transactions in the safe and
@@ -93,20 +92,8 @@ public class SendDialog extends JDialog implements ActionListener {
         //
         // Create the buttons (Send, Done)
         //
-        JPanel buttonPane = new JPanel();
-        buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
-
-        JButton button = new JButton("Send");
-        button.setActionCommand("send");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Done");
-        button.setActionCommand("done");
-        button.addActionListener(this);
-        buttonPane.add(button);
+        JPanel buttonPane = new ButtonPane(this, 10, new String[] {"Send", "send"},
+                                                     new String[] {"Done", "done"});
         //
         // Set up the content pane
         //

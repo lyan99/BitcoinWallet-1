@@ -55,6 +55,9 @@ public class TransactionPanel extends JPanel implements ActionListener {
     /** Safe balance field */
     private final JLabel safeLabel;
 
+    /** Block field */
+    private final JLabel blockLabel;
+
     /** Transaction table scroll pane */
     private final JScrollPane scrollPane;
 
@@ -107,43 +110,26 @@ public class TransactionPanel extends JPanel implements ActionListener {
         tablePane.add(scrollPane);
         tablePane.add(Box.createGlue());
         //
-        // Create the status pane containing the Wallet balance and Safe balance
+        // Create the status pane containing the Wallet balance, Safe balance and Chain block
         //
         JPanel statusPane = new JPanel();
         statusPane.setOpaque(true);
         statusPane.setBackground(Color.WHITE);
-
         walletLabel = new JLabel(getWalletText());
         statusPane.add(walletLabel);
-
         statusPane.add(Box.createHorizontalStrut(50));
-
         safeLabel = new JLabel(getSafeText());
         statusPane.add(safeLabel);
+        statusPane.add(Box.createHorizontalStrut(50));
+        blockLabel = new JLabel(getBlockText());
+        statusPane.add(blockLabel);
         //
         // Create the buttons (Move to Safe, Move to Wallet, Delete Transaction)
         //
-        JPanel buttonPane = new JPanel();
+        JPanel buttonPane = new ButtonPane(this, 15, new String[] {"Copy TxID", "copy txid"},
+                                                     new String[] {"Move to Safe", "move to safe"},
+                                                     new String[] {"Move to Wallet", "move to wallet"});
         buttonPane.setBackground(Color.white);
-
-        JButton button = new JButton("Copy TxID");
-        button.setActionCommand("copy txid");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(15));
-
-        button = new JButton("Move to Safe");
-        button.setActionCommand("move to safe");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(15));
-
-        button = new JButton("Move to Wallet");
-        button.setActionCommand("move to wallet");
-        button.addActionListener(this);
-        buttonPane.add(button);
         //
         // Set up the content pane
         //
@@ -214,9 +200,10 @@ public class TransactionPanel extends JPanel implements ActionListener {
     }
 
     /**
-     * Transaction status has changed
+     * A new block has been received
      */
     public void statusChanged() {
+        blockLabel.setText(getBlockText());
         tableModel.fireTableDataChanged();
     }
 
@@ -293,6 +280,13 @@ public class TransactionPanel extends JPanel implements ActionListener {
      */
     private String getSafeText() {
         return String.format("<html><h2>Safe %s BTC</h2></html>", Main.satoshiToString(safeBalance));
+    }
+
+    /**
+     * Construct the chain block text
+     */
+    private String getBlockText() {
+        return String.format("<html><h2>Block %d</h2></html>", Parameters.wallet.getChainHeight());
     }
 
     /**

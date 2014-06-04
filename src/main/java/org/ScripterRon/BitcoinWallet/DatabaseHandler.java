@@ -385,8 +385,9 @@ public class DatabaseHandler implements Runnable {
                 // Notify any listeners that one or more transactions have been updated
                 //
                 if (txUpdated) {
-                    for (WalletListener listener : listeners)
+                    listeners.stream().forEach((listener) -> {
                         listener.txUpdated();
+                    });
                 }
             }
         } catch (WalletException exc) {

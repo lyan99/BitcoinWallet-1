@@ -83,27 +83,9 @@ public class SignDialog extends JDialog implements ActionListener {
         //
         // Create the buttons (Sign, Copy, Done)
         //
-        JPanel buttonPane = new JPanel();
-        buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
-
-        JButton button = new JButton("Sign");
-        button.setActionCommand("sign");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Copy");
-        button.setActionCommand("copy");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Done");
-        button.setActionCommand("done");
-        button.addActionListener(this);
-        buttonPane.add(button);
+        JPanel buttonPane = new ButtonPane(this, 10, new String[] {"Sign", "sign"},
+                                                     new String[] {"Copy", "copy"},
+                                                     new String[] {"Done", "done"});
         //
         // Set up the content pane
         //

@@ -29,10 +29,10 @@ public class AddressEditDialog extends JDialog implements ActionListener {
     private Address updatedAddress;
 
     /** Name field */
-    private JTextField nameField;
+    private final JTextField nameField;
 
     /** Address field */
-    private JTextField addressField;
+    private final JTextField addressField;
 
     /**
      * Create the address edit dialog
@@ -72,20 +72,8 @@ public class AddressEditDialog extends JDialog implements ActionListener {
         //
         // Create the buttons (Save, Cancel)
         //
-        JPanel buttonPane = new JPanel();
-        buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
-
-        JButton button = new JButton("Save");
-        button.setActionCommand("save");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Cancel");
-        button.setActionCommand("cancel");
-        button.addActionListener(this);
-        buttonPane.add(button);
+        JPanel buttonPane = new ButtonPane(this, 10, new String[] {"Save", "save"},
+                                                     new String[] {"Cancel", "cancel"});
         //
         // Set up the content pane
         //

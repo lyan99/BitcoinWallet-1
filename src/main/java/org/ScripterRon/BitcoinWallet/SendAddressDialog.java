@@ -85,43 +85,12 @@ public class SendAddressDialog extends JDialog implements ActionListener {
         //
         // Create the buttons (New, Copy, Edit, Delete, Done)
         //
-        JPanel buttonPane = new JPanel();
+        JPanel buttonPane = new ButtonPane(this, 10, new String[] {"New", "new"},
+                                                     new String[] {"Copy", "copy"},
+                                                     new String[] {"Edit", "edit"},
+                                                     new String[] {"Delete", "delete"},
+                                                     new String[] {"Done", "done"});
         buttonPane.setBackground(Color.white);
-
-        buttonPane.add(Box.createVerticalStrut(15));
-
-        JButton button = new JButton("New");
-        button.setActionCommand("new");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Copy");
-        button.setActionCommand("copy");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Edit");
-        button.setActionCommand("edit");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Delete");
-        button.setActionCommand("delete");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Done");
-        button.setActionCommand("done");
-        button.addActionListener(this);
-        buttonPane.add(button);
         //
         // Set up the content pane
         //

@@ -27,9 +27,20 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.WindowConstants;
 
 /**
  * This is the main application window
@@ -100,93 +111,36 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         //
         // The "File" menu contains "Exit"
         //
-        JMenu menu;
-        JMenuItem menuItem;
-        menu = new JMenu("File");
-
-        menuItem = new JMenuItem("Exit");
-        menuItem.setActionCommand("exit");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuBar.add(menu);
+        menuBar.add(new Menu(this, "File", new String[] {"Exit", "exit"}));
         //
         // Add the "View" menu to the menu bar
         //
         // The "View" menu contains "Receive Addresses" and "Send Addresses"
         //
-        menu = new JMenu("View");
-
-        menuItem = new JMenuItem("Receive Addresses");
-        menuItem.setActionCommand("view receive");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuItem = new JMenuItem("Send Addresses");
-        menuItem.setActionCommand("view send");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuBar.add(menu);
+        menuBar.add(new Menu(this, "View", new String[] {"Receive Addresses", "view receive"},
+                                           new String[] {"Send Addresses", "view send"}));
         //
         // Add the "Actions" menu to the menu bar
         //
         // The "Actions" menu contains "Send Coins", "Sign Message" and "Verify Message"
         //
-        menu = new JMenu("Actions");
-
-        menuItem = new JMenuItem("Send Coins");
-        menuItem.setActionCommand("send coins");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuItem = new JMenuItem("Sign Message");
-        menuItem.setActionCommand("sign message");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuItem = new JMenuItem("Verify Message");
-        menuItem.setActionCommand("verify message");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuBar.add(menu);
+        menuBar.add(new Menu(this, "Actions", new String[] {"Send Coins", "send coins"},
+                                              new String[] {"Sign Message", "sign message"},
+                                              new String[] {"Verify Message", "verify message"}));
         //
         // Add the "Tools" menu to the menu bar
         //
         // The "Tools" menu contains "Export Keys", "Import Keys" and "Rescan Block Chain"
         //
-        menu = new JMenu("Tools");
-
-        menuItem = new JMenuItem("Export Keys");
-        menuItem.setActionCommand("export keys");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuItem = new JMenuItem("Import Keys");
-        menuItem.setActionCommand("import keys");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuItem = new JMenuItem("Rescan Block Chain");
-        menuItem.setActionCommand("rescan");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuBar.add(menu);
+        menuBar.add(new Menu(this, "Tools", new String[] {"Export Keys", "export keys"},
+                                            new String[] {"Import Keys", "import keys"},
+                                            new String[] {"Rescan Block Chain", "rescan"}));
         //
         // Add the "Help" menu to the menu bar
         //
         // The "Help" menu contains "About"
         //
-        menu = new JMenu("Help");
-
-        menuItem = new JMenuItem("About");
-        menuItem.setActionCommand("about");
-        menuItem.addActionListener(this);
-        menu.add(menuItem);
-
-        menuBar.add(menu);
+        menuBar.add(new Menu(this, "Help", new String[] {"About", "about"}));
         //
         // Add the menu bar to the window frame
         //
@@ -206,7 +160,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         //
         // Receive WindowListener events
         //
-        addWindowListener(new ApplicationWindowListener(this));
+        addWindowListener(new ApplicationWindowListener());
         //
         // Receive connection events
         //
@@ -283,7 +237,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         javax.swing.SwingUtilities.invokeLater(() -> {
             transactionPanel.statusChanged();
             if (synchronizingTitle && !rescanChain &&
-                    Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
+                                Parameters.networkChainHeight <= Parameters.wallet.getChainHeight()) {
                 synchronizingTitle = false;
                 setTitle("Bitcoin Wallet");
             }
@@ -644,16 +598,10 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
      */
     private class ApplicationWindowListener extends WindowAdapter {
 
-        /** Application window */
-        private final JFrame window;
-
         /**
          * Create the window listener
-         *
-         * @param       window      The application window
          */
-        public ApplicationWindowListener(JFrame window) {
-            this.window = window;
+        public ApplicationWindowListener() {
         }
 
         /**

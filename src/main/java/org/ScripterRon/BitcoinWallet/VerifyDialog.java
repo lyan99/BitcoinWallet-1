@@ -73,20 +73,8 @@ public class VerifyDialog extends JDialog implements ActionListener {
         //
         // Create the buttons (Verify, Done)
         //
-        JPanel buttonPane = new JPanel();
-        buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
-
-        JButton button = new JButton("Verify");
-        button.setActionCommand("verify");
-        button.addActionListener(this);
-        buttonPane.add(button);
-
-        buttonPane.add(Box.createHorizontalStrut(10));
-
-        button = new JButton("Done");
-        button.setActionCommand("done");
-        button.addActionListener(this);
-        buttonPane.add(button);
+        JPanel buttonPane = new ButtonPane(this, 10, new String[] {"Verify", "verify"},
+                                                     new String[] {"Done", "done"});
         //
         // Set up the content pane
         //
