@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.Sha256Hash;
 
 /**
  * A WalletException is thrown when an error occurs while storing or retrieving

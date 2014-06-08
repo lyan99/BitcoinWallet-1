@@ -14,9 +14,19 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
 
-import java.io.IOException;
+import org.ScripterRon.BitcoinCore.Address;
+import org.ScripterRon.BitcoinCore.AddressFormatException;
+import org.ScripterRon.BitcoinCore.ECException;
+import org.ScripterRon.BitcoinCore.InventoryItem;
+import org.ScripterRon.BitcoinCore.InventoryMessage;
+import org.ScripterRon.BitcoinCore.Message;
+import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.SignedInput;
+import org.ScripterRon.BitcoinCore.Transaction;
+import org.ScripterRon.BitcoinCore.TransactionOutput;
+import org.ScripterRon.BitcoinCore.VerificationException;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -261,7 +271,7 @@ public class SendDialog extends JDialog implements ActionListener {
             //
             try {
                 tx = new Transaction(inputs, outputs);
-            } catch (ECException | IOException | VerificationException exc) {
+            } catch (ECException | VerificationException exc) {
                 throw new WalletException("Unable to create transaction", exc);
             }
             //
@@ -280,9 +290,9 @@ public class SendDialog extends JDialog implements ActionListener {
         //
         if (tx != null) {
             Parameters.databaseHandler.processTransaction(tx);
-            List<Sha256Hash> invList = new ArrayList<>(2);
-            invList.add(tx.getHash());
-            Message invMsg = InventoryMessage.buildInventoryMessage(null, NetParams.INV_TX, invList);
+            List<InventoryItem> invList = new ArrayList<>(1);
+            invList.add(new InventoryItem(NetParams.INV_TX, tx.getHash()));
+            Message invMsg = InventoryMessage.buildInventoryMessage(null, invList);
             Parameters.networkHandler.broadcastMessage(invMsg);
             JOptionPane.showMessageDialog(this, String.format("Transaction broadcast to peer nodes\n%s",
                                           tx.getHash()), "Transaction Broadcast", JOptionPane.INFORMATION_MESSAGE);

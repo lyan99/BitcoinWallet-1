@@ -17,7 +17,7 @@ package org.ScripterRon.BitcoinWallet;
 
 /**
  * An BitcoinURIException is thrown if an error occurs while processing
- * a bitcoin URI
+ * a Bitcoin URI
  */
 public class BitcoinURIException extends Exception {
 

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.Sha256Hash;
 
 /**
  * This exception is thrown when a block is not found in the block store

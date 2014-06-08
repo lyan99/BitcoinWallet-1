@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.Address;
+import org.ScripterRon.BitcoinCore.Sha256Hash;
 
 import java.math.BigInteger;
 

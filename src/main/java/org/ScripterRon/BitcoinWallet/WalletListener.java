@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.BlockHeader;
 
 /**
  * A wallet listener receives notifications when a new block or transaction
@@ -33,7 +34,7 @@ public interface WalletListener {
      * Notification when one or more transactions have been updated
      */
     public void txUpdated();
-    
+
     /**
      * Notification when a block chain rescan is completed
      */

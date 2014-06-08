@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.Peer;
+import org.ScripterRon.BitcoinCore.Sha256Hash;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +38,7 @@ public class PeerRequest {
     private int type;
 
     /** Map of peers that have been contacted for this request */
-    private Map<Peer, Peer> peerMap = new HashMap<>(25);
+    private final Map<Peer, Peer> peerMap = new HashMap<>(25);
 
     /** Timestamp */
     private long timeStamp;
@@ -168,11 +170,7 @@ public class PeerRequest {
      */
     @Override
     public boolean equals(Object obj) {
-        boolean areEqual = false;
-        if (obj != null && (obj instanceof PeerRequest)) {
-            PeerRequest reqObj = (PeerRequest)obj;
-            areEqual = (hash.equals(reqObj.hash) && type == reqObj.type);
-        }
-        return areEqual;
+        return (obj!=null && (obj instanceof PeerRequest) && hash.equals(((PeerRequest)obj).hash) &&
+                                        type==((PeerRequest)obj).type);
     }
 }

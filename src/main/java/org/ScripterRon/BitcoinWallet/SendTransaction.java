@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
 
-import java.io.IOException;
+import org.ScripterRon.BitcoinCore.Address;
+import org.ScripterRon.BitcoinCore.SerializedBuffer;
+import org.ScripterRon.BitcoinCore.Sha256Hash;
+import org.ScripterRon.BitcoinCore.Transaction;
+import org.ScripterRon.BitcoinCore.VerificationException;
+
+import java.io.EOFException;
 import java.math.BigInteger;
 
 /**
@@ -77,10 +82,9 @@ public class SendTransaction extends WalletTransaction {
     public Transaction getTransaction() throws WalletException {
         Transaction tx;
         try {
-            try (SerializedInputStream inStream = new SerializedInputStream(txData)) {
-                tx = new Transaction(inStream);
-            }
-        } catch (IOException | VerificationException exc) {
+            SerializedBuffer inBuffer = new SerializedBuffer(txData);
+            tx = new Transaction(inBuffer);
+        } catch (EOFException | VerificationException exc) {
             throw new WalletException("Unable to deserialize transaction", exc);
         }
         return tx;

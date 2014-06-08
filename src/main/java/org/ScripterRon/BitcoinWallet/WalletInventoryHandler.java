@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Handle inventory requests and responses
  */
-public class WalletInventoryHandler implements InventoryHandler {
+public class WalletInventoryHandler implements MessageListener {
 
     /** Create our logger */
     private static final Logger log = LoggerFactory.getLogger(WalletInventoryHandler.class);

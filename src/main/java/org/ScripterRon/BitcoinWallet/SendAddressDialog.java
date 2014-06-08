@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.Address;
 
 import javax.swing.*;
 import javax.swing.table.*;

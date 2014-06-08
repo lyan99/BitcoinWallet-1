@@ -14,7 +14,18 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.Address;
+import org.ScripterRon.BitcoinCore.ECException;
+import org.ScripterRon.BitcoinCore.InventoryItem;
+import org.ScripterRon.BitcoinCore.InventoryMessage;
+import org.ScripterRon.BitcoinCore.Message;
+import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.ScriptOpCodes;
+import org.ScripterRon.BitcoinCore.SignedInput;
+import org.ScripterRon.BitcoinCore.Transaction;
+import org.ScripterRon.BitcoinCore.TransactionOutput;
+import org.ScripterRon.BitcoinCore.VerificationException;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -293,9 +304,9 @@ public class BitcoinPayment {
             if (paymentURL != null)
                 sendPayment(tx);
             Parameters.databaseHandler.processTransaction(tx);
-            List<Sha256Hash> invList = new ArrayList<>(2);
-            invList.add(tx.getHash());
-            Message invMsg = InventoryMessage.buildInventoryMessage(null, NetParams.INV_TX, invList);
+            List<InventoryItem> invList = new ArrayList<>(1);
+            invList.add(new InventoryItem(NetParams.INV_TX, tx.getHash()));
+            Message invMsg = InventoryMessage.buildInventoryMessage(null, invList);
             Parameters.networkHandler.broadcastMessage(invMsg);
             //
             // Create a send address for the merchant
@@ -341,14 +352,14 @@ public class BitcoinPayment {
                 //
                 Parameters.wallet.storeAddress(address);
             }
-        } catch (ECException | IOException | VerificationException | WalletException exc) {
+        } catch (ECException | VerificationException | WalletException exc) {
             log.error("Unable to build transaction inputs", exc);
             throw new BitcoinPaymentException("Unable to build transaction inputs");
         }
     }
 
     /**
-     * Sends the payment to the merchant and receive the acknowledgement
+     * Sends the payment to the merchant and receive the acknowledgment
      *
      * @param       tx                          Generated transaction
      * @throws      BitcoinPaymentException     Unable to send payment

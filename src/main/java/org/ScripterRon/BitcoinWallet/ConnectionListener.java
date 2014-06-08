@@ -15,7 +15,7 @@
  */
 package org.ScripterRon.BitcoinWallet;
 
-import org.ScripterRon.BitcoinCore.*;
+import org.ScripterRon.BitcoinCore.Peer;
 
 /**
  * A connection listener receives notification when a connection starts or ends

@@ -15,7 +15,8 @@
  */
 package org.ScripterRon.BitcoinWallet;
 
-import org.ScripterRon.BitcoinCore.*;
+import org.ScripterRon.BitcoinCore.Address;
+import org.ScripterRon.BitcoinCore.AddressFormatException;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -55,7 +56,7 @@ public class BitcoinURI {
      * Creates a new Bitcoin URI
      *
      * @param       uriString               Encoded URI string
-     * @throws      AddressFormatException  The bitcoin address is not valid
+     * @throws      AddressFormatException  The Bitcoin address is not valid
      * @throws      BitcoinURIException     The URI syntax is not valid
      */
     public BitcoinURI(String uriString) throws AddressFormatException, BitcoinURIException {
@@ -109,7 +110,7 @@ public class BitcoinURI {
     }
 
     /**
-    * Returns the bitcoin payment address
+    * Returns the Bitcoin payment address
     *
     * @return                          Payment address or null
     */

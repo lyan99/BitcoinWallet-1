@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.Address;
+import org.ScripterRon.BitcoinCore.BloomFilter;
+import org.ScripterRon.BitcoinCore.ECKey;
+import org.ScripterRon.BitcoinCore.Message;
+import org.ScripterRon.BitcoinCore.MessageListener;
+import org.ScripterRon.BitcoinCore.PeerAddress;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -83,7 +89,7 @@ public class Parameters {
     public static DatabaseHandler databaseHandler;
 
     /** Inventory handler */
-    public static InventoryHandler inventoryHandler;
+    public static MessageListener inventoryHandler;
 
     /** Wallet database */
     public static Wallet wallet;
