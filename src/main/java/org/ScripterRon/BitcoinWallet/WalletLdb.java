@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.Address;
+import org.ScripterRon.BitcoinCore.BlockHeader;
+import org.ScripterRon.BitcoinCore.ECException;
+import org.ScripterRon.BitcoinCore.ECKey;
+import org.ScripterRon.BitcoinCore.EncryptedPrivateKey;
+import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.SerializedBuffer;
+import org.ScripterRon.BitcoinCore.Sha256Hash;
+import org.ScripterRon.BitcoinCore.VarInt;
+import org.ScripterRon.BitcoinCore.VerificationException;
 
 import org.iq80.leveldb.CompressionType;
 import org.iq80.leveldb.DB;
@@ -41,7 +51,7 @@ import java.util.Set;
 
 /**
  * <p>A Wallet stores block headers, transactions, addresses and keys.  These are used to
- * access bitcoins recorded in the block chain.  A wallet can be deleted and recreated as long
+ * access Bitcoins recorded in the block chain.  A wallet can be deleted and recreated as long
  * as the private keys have been exported and then imported into the new wallet.</p>
  */
 public class WalletLdb extends Wallet {
@@ -50,28 +60,25 @@ public class WalletLdb extends Wallet {
     private final Charset charset = Charset.forName("UTF-8");
 
     /** Headers database */
-    private DB dbHeaders;
+    private final DB dbHeaders;
 
     /** BlockChain database */
-    private DB dbBlockChain;
+    private final DB dbBlockChain;
 
     /** Child database */
-    private DB dbChild;
+    private final DB dbChild;
 
     /** Received database */
-    private DB dbReceived;
+    private final DB dbReceived;
 
     /** Sent database */
-    private DB dbSent;
+    private final DB dbSent;
 
     /** Address database */
-    private DB dbAddress;
+    private final DB dbAddress;
 
     /** Keys database */
-    private DB dbKeys;
-
-    /** Application data path */
-    private String dataPath;
+    private final DB dbKeys;
 
     /**
      * Creates a Wallet using the LevelDB database
@@ -81,7 +88,6 @@ public class WalletLdb extends Wallet {
      */
     public WalletLdb(String dataPath) throws WalletException {
         super();
-        this.dataPath = dataPath;
         Options options = new Options();
         options.createIfMissing(true);
         options.compressionType(CompressionType.NONE);
@@ -170,7 +176,7 @@ public class WalletLdb extends Wallet {
                     //
                     // Add the genesis block to the block chain
                     //
-                    BlockHeader header = new BlockHeader(Parameters.GENESIS_BLOCK_BYTES);
+                    BlockHeader header = new BlockHeader(Parameters.GENESIS_BLOCK_BYTES, false);
                     BlockEntry blockEntry = new BlockEntry(Sha256Hash.ZERO_HASH, header.getBlockTime(),
                                                            header.getTargetDifficulty(), header.getMerkleRoot(),
                                                            true, chainHeight, chainWork, null);
@@ -186,7 +192,6 @@ public class WalletLdb extends Wallet {
             log.error("Unable to initialize wallet", exc);
             throw new WalletException("Unable to initialize wallet");
         }
-
     }
 
     /**
@@ -502,12 +507,12 @@ public class WalletLdb extends Wallet {
      * @throws      WalletException     Unable to store the block header
      */
     @Override
-    public void storeHeader(BlockHeader header) throws WalletException {
+    public void storeHeader(StoredHeader header) throws WalletException {
         try {
             BlockEntry blockEntry = new BlockEntry(header.getPrevHash(), header.getBlockTime(),
-                                            header.getTargetDifficulty(), header.getMerkleRoot(),
-                                            header.isOnChain(), header.getBlockHeight(),
-                                            header.getChainWork(), header.getMatches());
+                                header.getTargetDifficulty(), header.getMerkleRoot(),
+                                header.isOnChain(), header.getBlockHeight(),
+                                header.getChainWork(), header.getMatches());
             dbHeaders.put(header.getHash().getBytes(), blockEntry.getBytes());
             dbChild.put(header.getPrevHash().getBytes(), header.getHash().getBytes());
         } catch (DBException exc) {
@@ -542,27 +547,27 @@ public class WalletLdb extends Wallet {
      * Returns a block header stored in the database
      *
      * @param       blockHash           Block hash
-     * @return                          Block header or null if the block is not found
+     * @return                          Stored block header or null if the block is not found
      * @throws      WalletException     Unable to retrieve the block header
      */
     @Override
-    public BlockHeader getHeader(Sha256Hash blockHash) throws WalletException {
-        BlockHeader header = null;
+    public StoredHeader getHeader(Sha256Hash blockHash) throws WalletException {
+        StoredHeader storedHeader = null;
         try {
             byte[] entryData = dbHeaders.get(blockHash.getBytes());
             if (entryData != null) {
                 BlockEntry blockEntry = new BlockEntry(entryData);
-                header = new BlockHeader(blockHash, blockEntry.getPrevHash(),
-                                        blockEntry.getTimeStamp(), blockEntry.getTargetDifficulty(),
-                                        blockEntry.getMerkleRoot(), blockEntry.isOnChain(),
-                                        blockEntry.getHeight(), blockEntry.getChainWork(),
-                                        blockEntry.getMatches());
+                storedHeader = new StoredHeader(blockHash, blockEntry.getPrevHash(),
+                                    blockEntry.getTimeStamp(), blockEntry.getTargetDifficulty(),
+                                    blockEntry.getMerkleRoot(), blockEntry.isOnChain(),
+                                    blockEntry.getHeight(), blockEntry.getChainWork(),
+                                    blockEntry.getMatches());
             }
         } catch (DBException | EOFException exc) {
             log.error(String.format("Unable to get block header\n  %s", blockHash.toString()), exc);
             throw new WalletException("Unable to get block header", blockHash);
         }
-        return header;
+        return storedHeader;
     }
 
     /**
@@ -573,8 +578,8 @@ public class WalletLdb extends Wallet {
      * @throws      WalletException     Unable to retrieve the child block header
      */
     @Override
-    public BlockHeader getChildHeader(Sha256Hash parentHash) throws WalletException {
-        BlockHeader childHeader = null;
+    public StoredHeader getChildHeader(Sha256Hash parentHash) throws WalletException {
+        StoredHeader childHeader = null;
         try {
             byte[] entryData = dbChild.get(parentHash.getBytes());
             if (entryData != null) {
@@ -582,7 +587,7 @@ public class WalletLdb extends Wallet {
                 entryData = dbHeaders.get(childHash.getBytes());
                 if (entryData != null) {
                     BlockEntry blockEntry = new BlockEntry(entryData);
-                    childHeader = new BlockHeader(childHash, blockEntry.getPrevHash(),
+                    childHeader = new StoredHeader(childHash, blockEntry.getPrevHash(),
                                         blockEntry.getTimeStamp(), blockEntry.getTargetDifficulty(),
                                         blockEntry.getMerkleRoot(), blockEntry.isOnChain(),
                                         blockEntry.getHeight(), blockEntry.getChainWork(),
@@ -999,9 +1004,9 @@ public class WalletLdb extends Wallet {
      * @throws      WalletException         Unable to get blocks from the database
      */
     @Override
-    public List<BlockHeader> getJunction(Sha256Hash chainHash)
+    public List<StoredHeader> getJunction(Sha256Hash chainHash)
                          throws BlockNotFoundException, WalletException {
-        List<BlockHeader> chainList = new LinkedList<>();
+        List<StoredHeader> chainList = new LinkedList<>();
         boolean onChain = false;
         Sha256Hash blockHash = chainHash;
         synchronized (lock) {
@@ -1016,7 +1021,7 @@ public class WalletLdb extends Wallet {
                     if (entryData != null) {
                         BlockEntry blockEntry = new BlockEntry(entryData);
                         onChain = blockEntry.isOnChain();
-                        BlockHeader header = new BlockHeader(blockHash, blockEntry.getPrevHash(),
+                        StoredHeader header = new StoredHeader(blockHash, blockEntry.getPrevHash(),
                                         blockEntry.getTimeStamp(), blockEntry.getTargetDifficulty(),
                                         blockEntry.getMerkleRoot(), onChain, blockEntry.getHeight(),
                                         blockEntry.getChainWork(), blockEntry.getMatches());
@@ -1047,12 +1052,12 @@ public class WalletLdb extends Wallet {
      * @throws      WalletException         Unable to update the database
      */
     @Override
-    public void setChainHead(List<BlockHeader> chainList) throws WalletException, VerificationException {
+    public void setChainHead(List<StoredHeader> chainList) throws WalletException, VerificationException {
         //
         // See if we have reached a checkpoint.  If we have, the new block at that height
         // must match the checkpoint block.
         //
-        for (BlockHeader header : chainList) {
+        for (StoredHeader header : chainList) {
             Sha256Hash checkHash = checkpoints.get(Integer.valueOf(header.getBlockHeight()));
             if (checkHash != null) {
                 if (checkHash.equals(header.getHash())) {
@@ -1066,14 +1071,14 @@ public class WalletLdb extends Wallet {
                 }
             }
         }
-        BlockHeader chainHeader = chainList.get(chainList.size()-1);
+        StoredHeader chainHeader = chainList.get(chainList.size()-1);
         //
         // Make the new block the chain head
         //
         synchronized (lock) {
             Sha256Hash blockHash;
             Sha256Hash prevHash;
-            BlockHeader header;
+            StoredHeader header;
             Entry<byte[], byte[]> dbEntry;
             byte[] entryData;
             BlockEntry blockEntry;
@@ -1317,10 +1322,10 @@ public class WalletLdb extends Wallet {
     private class BlockEntry {
 
         /** Previous block hash */
-        private Sha256Hash prevHash;
+        private final Sha256Hash prevHash;
 
         /** Merkle root */
-        private Sha256Hash merkleRoot;
+        private final Sha256Hash merkleRoot;
 
         /** Block height */
         private int blockHeight;
@@ -1329,10 +1334,10 @@ public class WalletLdb extends Wallet {
         private BigInteger chainWork;
 
         /** Block timestamp */
-        private long timeStamp;
+        private final long timeStamp;
 
         /** Target difficulty */
-        private long targetDifficulty;
+        private final long targetDifficulty;
 
         /** Block chain status */
         private boolean onChain;
@@ -1373,45 +1378,21 @@ public class WalletLdb extends Wallet {
          * @throws      EOFException    End-of-data processing the serialized data
          */
         public BlockEntry(byte[] entryData) throws EOFException {
-            if (entryData.length < 65)
-                throw new EOFException("End-of-data while processing BlockEntry");
-            onChain = (entryData[0]==1);
-            prevHash = new Sha256Hash(entryData, 1, 32);
-            merkleRoot = new Sha256Hash(entryData, 33, 32);
-            int offset = 65;
-            // Decode chainWork
-            VarInt varInt = new VarInt(entryData, offset);
-            int length = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            if (offset+length > entryData.length)
-                throw new EOFException("End-of-data while processing BlockEntry");
-            byte[] bytes = Arrays.copyOfRange(entryData, offset, offset+length);
-            chainWork = new BigInteger(bytes);
-            offset += length;
-            // Decode timeStamp
-            varInt = new VarInt(entryData, offset);
-            timeStamp = varInt.toLong();
-            offset += varInt.getEncodedSize();
-            // Decode blockHeight
-            varInt = new VarInt(entryData, offset);
-            blockHeight = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            // Decode targetDifficulty
-            varInt = new VarInt(entryData, offset);
-            targetDifficulty = varInt.toLong();
-            offset += varInt.getEncodedSize();
-            // Decode matches
-            varInt = new VarInt(entryData, offset);
-            int count = varInt.toInt();
-            offset += varInt.getEncodedSize();
+            SerializedBuffer inBuffer = new SerializedBuffer(entryData);
+            onChain = inBuffer.getBoolean();
+            prevHash = new Sha256Hash(inBuffer.getBytes(32));
+            merkleRoot = new Sha256Hash(inBuffer.getBytes(32));
+            chainWork = new BigInteger(inBuffer.getBytes());
+            timeStamp = inBuffer.getVarLong();
+            blockHeight = inBuffer.getVarInt();
+            targetDifficulty = inBuffer.getVarLong();
+            int count = inBuffer.getVarInt();
             if (count > 0) {
-                if (offset+32*count > entryData.length)
-                    throw new EOFException("End-of-data while processing BlockEntry");
                 matches = new ArrayList<>(count);
-                for (int i=0; i<count; i++) {
-                    matches.add(new Sha256Hash(entryData, offset, 32));
-                    offset += 32;
-                }
+                for (int i=0; i<count; i++)
+                    matches.add(new Sha256Hash(inBuffer.getBytes(32)));
+            } else {
+                matches = null;
             }
         }
 
@@ -1421,50 +1402,23 @@ public class WalletLdb extends Wallet {
          * @return      Serialized data stream
          */
         public byte[] getBytes() {
-            byte[] heightData = VarInt.encode(blockHeight);
             byte[] workBytes = chainWork.toByteArray();
-            byte[] workLength = VarInt.encode(workBytes.length);
-            byte[] timeData = VarInt.encode(timeStamp);
-            byte[] targetData = VarInt.encode(targetDifficulty);
-            int length = 1+32+32+workLength.length+workBytes.length+timeData.length+
-                                    heightData.length+targetData.length;
-            byte[] countData;
+            SerializedBuffer outBuffer = new SerializedBuffer();
+            outBuffer.putBoolean(onChain)
+                     .putBytes(prevHash.getBytes())
+                     .putBytes(merkleRoot.getBytes())
+                     .putVarInt(workBytes.length)
+                     .putBytes(workBytes)
+                     .putVarLong(timeStamp)
+                     .putVarInt(blockHeight)
+                     .putVarLong(targetDifficulty);
             if (matches != null) {
-                countData = VarInt.encode(matches.size());
-                length += countData.length+matches.size()*32;
+                outBuffer.putVarInt(matches.size());
+                matches.stream().forEach((hash) -> outBuffer.putBytes(hash.getBytes()));
             } else {
-                countData = new byte[1];
-                length++;
+                outBuffer.putVarInt(0);
             }
-            byte[] entryData = new byte[length];
-            entryData[0] = (onChain ? (byte)1 : 0);
-            System.arraycopy(prevHash.getBytes(), 0, entryData, 1, 32);
-            System.arraycopy(merkleRoot.getBytes(), 0, entryData, 33, 32);
-            int offset = 65;
-            // Encode chainWork
-            System.arraycopy(workLength, 0, entryData, offset, workLength.length);
-            offset += workLength.length;
-            System.arraycopy(workBytes, 0, entryData, offset, workBytes.length);
-            offset += workBytes.length;
-            // Encode timestamp
-            System.arraycopy(timeData, 0, entryData, offset, timeData.length);
-            offset += timeData.length;
-            // Encode blockHeight
-            System.arraycopy(heightData, 0, entryData, offset, heightData.length);
-            offset += heightData.length;
-            // Encode targetDifficulty
-            System.arraycopy(targetData, 0, entryData, offset, targetData.length);
-            offset += targetData.length;
-            // Encode matches
-            System.arraycopy(countData, 0, entryData, offset, countData.length);
-            offset += countData.length;
-            if (matches != null) {
-                for (Sha256Hash hash : matches) {
-                    System.arraycopy(hash.getBytes(), 0, entryData, offset, 32);
-                    offset += 32;
-                }
-            }
-            return entryData;
+            return outBuffer.toByteArray();
         }
 
         /**
@@ -1582,10 +1536,10 @@ public class WalletLdb extends Wallet {
     private class TransactionID {
 
         /** Transaction hash */
-        private Sha256Hash txHash;
+        private final Sha256Hash txHash;
 
         /** Transaction output index */
-        private int txIndex;
+        private final int txIndex;
 
         /**
          * Creates the transaction ID
@@ -1699,31 +1653,31 @@ public class WalletLdb extends Wallet {
         private Sha256Hash blockHash;
 
         /** Transaction time */
-        private long txTime;
+        private final long txTime;
 
         /** Receive address */
-        private byte[] address;
+        private final byte[] address;
 
         /** Transaction value */
-        private BigInteger value;
+        private final BigInteger value;
 
         /** Coins spent */
         private boolean isSpent;
 
         /** Coins sent to change address */
-        private boolean isChange;
+        private final boolean isChange;
 
         /** Coins are in the safe */
         private boolean inSafe;
 
         /** This is a coinbase transaction */
-        private boolean isCoinBase;
+        private final boolean isCoinBase;
 
         /** Transaction is deleted */
         private boolean isDeleted;
 
         /** Script bytes */
-        private byte[] scriptBytes;
+        private final byte[] scriptBytes;
 
         /**
          * Creates a new ReceiveEntry
@@ -1764,37 +1718,18 @@ public class WalletLdb extends Wallet {
          * @throws      EOFException    End-of-data processing the serialized data
          */
         public ReceiveEntry(byte[] entryData) throws EOFException {
-            if (entryData.length < 89)
-                throw new EOFException("End-of-data while processing ReceiveEntry");
-            isSpent = (entryData[0]==1);
-            isChange = (entryData[1]==1);
-            inSafe = (entryData[2]==1);
-            isDeleted = (entryData[3]==1);
-            isCoinBase = (entryData[4]==1);
-            normID = new Sha256Hash(entryData, 5, 32);
-            blockHash = new Sha256Hash(entryData, 37, 32);
-            address = Arrays.copyOfRange(entryData, 69, 89);
-            int offset = 89;
-            // Decode txTime
-            VarInt varInt = new VarInt(entryData, offset);
-            txTime = varInt.toLong();
-            offset += varInt.getEncodedSize();
-            // Decode value
-            varInt = new VarInt(entryData, offset);
-            int length = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            if (offset+length > entryData.length)
-                throw new EOFException("End-of-data while processing ReceiveEntry");
-            byte[] bytes = Arrays.copyOfRange(entryData, offset, offset+length);
-            value = new BigInteger(bytes);
-            offset += length;
-            // Decode scriptBytes
-            varInt = new VarInt(entryData, offset);
-            length = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            if (offset+length > entryData.length)
-                throw new EOFException("End-of-data while processing ReceiveEntry");
-            scriptBytes = Arrays.copyOfRange(entryData, offset, offset+length);
+            SerializedBuffer inBuffer = new SerializedBuffer(entryData);
+            isSpent = inBuffer.getBoolean();
+            isChange = inBuffer.getBoolean();
+            inSafe = inBuffer.getBoolean();
+            isDeleted = inBuffer.getBoolean();
+            isCoinBase = inBuffer.getBoolean();
+            normID = new Sha256Hash(inBuffer.getBytes(32));
+            blockHash = new Sha256Hash(inBuffer.getBytes(32));
+            address = inBuffer.getBytes(20);
+            txTime = inBuffer.getVarLong();
+            value = new BigInteger(inBuffer.getBytes());
+            scriptBytes = inBuffer.getBytes();
         }
 
         /**
@@ -1803,34 +1738,22 @@ public class WalletLdb extends Wallet {
          * @return      Serialized data stream
          */
         public byte[] getBytes() {
-            byte[] timeData = VarInt.encode(txTime);
             byte[] valueData = value.toByteArray();
-            byte[] valueLength = VarInt.encode(valueData.length);
-            byte[] scriptLength = VarInt.encode(scriptBytes.length);
-            byte[] entryData = new byte[5+32+32+20+timeData.length+valueLength.length+valueData.length+
-                                        scriptLength.length+scriptBytes.length];
-            entryData[0] = (isSpent?(byte)1:0);
-            entryData[1] = (isChange?(byte)1:0);
-            entryData[2] = (inSafe?(byte)1:0);
-            entryData[3] = (isDeleted?(byte)1:0);
-            entryData[4] = (isCoinBase?(byte)1:0);
-            System.arraycopy(normID.getBytes(), 0, entryData, 5, 32);
-            System.arraycopy(blockHash.getBytes(), 0, entryData, 37, 32);
-            System.arraycopy(address, 0, entryData, 69, 20);
-            int offset = 89;
-            // Encode txTime
-            System.arraycopy(timeData, 0, entryData, offset, timeData.length);
-            offset += timeData.length;
-            // Encode value
-            System.arraycopy(valueLength, 0, entryData, offset, valueLength.length);
-            offset += valueLength.length;
-            System.arraycopy(valueData, 0, entryData, offset, valueData.length);
-            offset += valueData.length;
-            // Encode scriptBytes
-            System.arraycopy(scriptLength, 0, entryData, offset, scriptLength.length);
-            offset += scriptLength.length;
-            System.arraycopy(scriptBytes, 0, entryData, offset, scriptBytes.length);
-            return entryData;
+            SerializedBuffer outBuffer = new SerializedBuffer();
+            outBuffer.putBoolean(isSpent)
+                     .putBoolean(isChange)
+                     .putBoolean(inSafe)
+                     .putBoolean(isDeleted)
+                     .putBoolean(isCoinBase)
+                     .putBytes(normID.getBytes())
+                     .putBytes(blockHash.getBytes())
+                     .putBytes(address)
+                     .putVarLong(txTime)
+                     .putVarInt(valueData.length)
+                     .putBytes(valueData)
+                     .putVarInt(scriptBytes.length)
+                     .putBytes(scriptBytes);
+            return outBuffer.toByteArray();
         }
 
         /**
@@ -1990,28 +1913,28 @@ public class WalletLdb extends Wallet {
     private class SendEntry {
 
         /** Normalized ID */
-        private Sha256Hash normID;
+        private final Sha256Hash normID;
 
         /** Block hash */
         private Sha256Hash blockHash;
 
         /** Transaction time */
-        private long txTime;
+        private final long txTime;
 
         /** Send address */
-        private byte[] address;
+        private final byte[] address;
 
         /** Transaction value */
-        private BigInteger value;
+        private final BigInteger value;
 
         /** Transaction fee */
-        private BigInteger fee;
+        private final BigInteger fee;
 
         /** Transaction is deleted */
         private boolean isDeleted;
 
         /** Transaction data */
-        private byte[] txData;
+        private final byte[] txData;
 
         /**
          * Creates a new SendEntry
@@ -2045,42 +1968,15 @@ public class WalletLdb extends Wallet {
          * @throws      EOFException    End-of-data processing the serialized data
          */
         public SendEntry(byte[] entryData) throws EOFException {
-            if (entryData.length < 85)
-                throw new EOFException("End-of-data while processing SendEntry");
-            isDeleted = (entryData[0]==1);
-            normID = new Sha256Hash(entryData, 1, 32);
-            blockHash = new Sha256Hash(entryData, 33, 32);
-            address = Arrays.copyOfRange(entryData, 65, 85);
-            int offset = 85;
-            // Decode txTime
-            VarInt varInt = new VarInt(entryData, offset);
-            txTime = varInt.toLong();
-            offset += varInt.getEncodedSize();
-            // Decode value
-            varInt = new VarInt(entryData, offset);
-            int length = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            if (offset+length > entryData.length)
-                throw new EOFException("End-of-data while processing SendEntry");
-            byte[] bytes = Arrays.copyOfRange(entryData, offset, offset+length);
-            value = new BigInteger(bytes);
-            offset += length;
-            // Decode fee
-            varInt = new VarInt(entryData, offset);
-            length = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            if (offset+length > entryData.length)
-                throw new EOFException("End-of-data while processing SendEntry");
-            bytes = Arrays.copyOfRange(entryData, offset, offset+length);
-            fee = new BigInteger(bytes);
-            offset += length;
-            // Decode txData
-            varInt = new VarInt(entryData, offset);
-            length = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            if (offset+length > entryData.length)
-                throw new EOFException("End-of-data while processing SendEntry");
-            txData = Arrays.copyOfRange(entryData, offset, offset+length);
+            SerializedBuffer inBuffer = new SerializedBuffer(entryData);
+            isDeleted = inBuffer.getBoolean();
+            normID = new Sha256Hash(inBuffer.getBytes(32));
+            blockHash = new Sha256Hash(inBuffer.getBytes(32));
+            address = inBuffer.getBytes(20);
+            txTime = inBuffer.getVarLong();
+            value = new BigInteger(inBuffer.getBytes());
+            fee = new BigInteger(inBuffer.getBytes());
+            txData = inBuffer.getBytes();
         }
 
         /**
@@ -2089,37 +1985,21 @@ public class WalletLdb extends Wallet {
          * @return      Serialized data stream
          */
         public byte[] getBytes() {
-            byte[] timeData = VarInt.encode(txTime);
             byte[] valueData = value.toByteArray();
-            byte[] valueLength = VarInt.encode(valueData.length);
             byte[] feeData = fee.toByteArray();
-            byte[] feeLength = VarInt.encode(feeData.length);
-            byte[] txLength = VarInt.encode(txData.length);
-            byte[] entryData = new byte[1+32+32+20+timeData.length+valueLength.length+valueData.length+
-                                        feeLength.length+feeData.length+txLength.length+txData.length];
-            entryData[0] = (isDeleted?(byte)1:0);
-            System.arraycopy(normID.getBytes(), 0, entryData, 1, 32);
-            System.arraycopy(blockHash.getBytes(), 0, entryData, 33, 32);
-            System.arraycopy(address, 0, entryData, 65, 20);
-            int offset = 85;
-            // Encode txTime
-            System.arraycopy(timeData, 0, entryData, offset, timeData.length);
-            offset += timeData.length;
-            // Encode value
-            System.arraycopy(valueLength, 0, entryData, offset, valueLength.length);
-            offset += valueLength.length;
-            System.arraycopy(valueData, 0, entryData, offset, valueData.length);
-            offset += valueData.length;
-            // Encode fee
-            System.arraycopy(feeLength, 0, entryData, offset, feeLength.length);
-            offset += feeLength.length;
-            System.arraycopy(feeData, 0, entryData, offset, feeData.length);
-            offset += feeData.length;
-            // Encode txData
-            System.arraycopy(txLength, 0, entryData, offset, txLength.length);
-            offset += txLength.length;
-            System.arraycopy(txData, 0, entryData, offset, txData.length);
-            return entryData;
+            SerializedBuffer outBuffer = new SerializedBuffer();
+            outBuffer.putBoolean(isDeleted)
+                     .putBytes(normID.getBytes())
+                     .putBytes(blockHash.getBytes())
+                     .putBytes(address)
+                     .putVarLong(txTime)
+                     .putVarInt(valueData.length)
+                     .putBytes(valueData)
+                     .putVarInt(feeData.length)
+                     .putBytes(feeData)
+                     .putVarInt(txData.length)
+                     .putBytes(txData);
+            return outBuffer.toByteArray();
         }
 
         /**
@@ -2230,16 +2110,16 @@ public class WalletLdb extends Wallet {
     private class KeyEntry {
 
         /** Encrypted private key */
-        private byte[] encPrivKey;
+        private final byte[] encPrivKey;
 
         /** Key creation time */
-        private long creationTime;
+        private final long creationTime;
 
         /** Key label */
         private String label;
 
         /** Key is a change key */
-        private boolean isChange;
+        private final boolean isChange;
 
         /**
          * Creates a new KeyEntry
@@ -2263,33 +2143,11 @@ public class WalletLdb extends Wallet {
          * @throws      EOFException    End-of-data processing the serialized data
          */
         public KeyEntry(byte[] entryData) throws EOFException {
-            if (entryData.length < 2)
-                throw new EOFException("End-of-data while processing KeyEntry");
-            isChange = (entryData[0]==1);
-            int offset = 1;
-            // Decode creation time
-            VarInt varInt = new VarInt(entryData, offset);
-            creationTime = varInt.toLong();
-            offset += varInt.getEncodedSize();
-            // Decode encPrivKey
-            varInt = new VarInt(entryData, offset);
-            int length = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            if (offset+length > entryData.length)
-                throw new EOFException("End-of-data while processing KeyEntry");
-            encPrivKey = Arrays.copyOfRange(entryData, offset, offset+length);
-            offset += length;
-            // Decode label
-            varInt = new VarInt(entryData, offset);
-            length = varInt.toInt();
-            offset += varInt.getEncodedSize();
-            if (length == 0) {
-                label = "";
-            } else {
-                if (offset+length > entryData.length)
-                    throw new EOFException("End-of-data while processing KeyEntry");
-                label = new String(entryData, offset, length, charset);
-            }
+            SerializedBuffer inBuffer = new SerializedBuffer(entryData);
+            isChange = inBuffer.getBoolean();
+            creationTime = inBuffer.getLong();
+            encPrivKey = inBuffer.getBytes();
+            label = inBuffer.getString();
         }
 
         /**
@@ -2298,30 +2156,13 @@ public class WalletLdb extends Wallet {
          * @return      Serialized data stream
          */
         public byte[] getBytes() {
-            byte[] timeData = VarInt.encode(creationTime);
-            byte[] keyLength = VarInt.encode(encPrivKey.length);
-            byte[] labelData = label.getBytes(charset);
-            byte[] labelLength = VarInt.encode(labelData.length);
-            byte[] entryData = new byte[1+timeData.length+keyLength.length+encPrivKey.length+
-                                        labelLength.length+labelData.length];
-            entryData[0] = (isChange?(byte)1:0);
-            int offset = 1;
-            // Encode creationTime
-            System.arraycopy(timeData, 0, entryData, offset, timeData.length);
-            offset += timeData.length;
-            // Encode encPrivKey
-            System.arraycopy(keyLength, 0, entryData, offset, keyLength.length);
-            offset += keyLength.length;
-            System.arraycopy(encPrivKey, 0, entryData, offset, encPrivKey.length);
-            offset += encPrivKey.length;
-            // Encode label
-            System.arraycopy(labelLength, 0, entryData, offset, labelLength.length);
-            offset += labelLength.length;
-            if (labelData.length > 0) {
-                System.arraycopy(labelData, 0, entryData, offset, labelData.length);
-                offset += labelData.length;
-            }
-            return entryData;
+            SerializedBuffer outBuffer = new SerializedBuffer();
+            outBuffer.putBoolean(isChange)
+                     .putLong(creationTime)
+                     .putVarInt(encPrivKey.length)
+                     .putBytes(encPrivKey)
+                     .putString(label);
+            return outBuffer.toByteArray();
         }
 
         /**

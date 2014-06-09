@@ -28,7 +28,7 @@ import java.util.List;
 public class StoredHeader {
 
     /** Block header */
-    private BlockHeader blockHeader;
+    private final BlockHeader blockHeader;
 
     /** On chain */
     private boolean onChain;
@@ -42,7 +42,6 @@ public class StoredHeader {
     /**
      * Create a StoredHeader from a database entry
      *
-     * @param       version             Block version
      * @param       blockHash           Block hash
      * @param       prevHash            Previous block hash
      * @param       blockTime           Time block was mined (seconds since Unix epoch)
@@ -53,12 +52,10 @@ public class StoredHeader {
      * @param       chainWork           Cumulative chain work
      * @param       matches             Matched transactions for this block
      */
-    public StoredHeader(int version, Sha256Hash blockHash, Sha256Hash prevHash,
-                                        long blockTime, long targetDifficulty, Sha256Hash merkleRoot,
-                                        boolean onChain, int blockHeight, BigInteger chainWork,
-                                        List<Sha256Hash> matches) {
-        blockHeader = new BlockHeader(version, blockHash, prevHash, blockTime, targetDifficulty,
-                                        merkleRoot, 0);
+    public StoredHeader(Sha256Hash blockHash, Sha256Hash prevHash, long blockTime, long targetDifficulty,
+                                Sha256Hash merkleRoot, boolean onChain, int blockHeight, BigInteger chainWork,
+                                List<Sha256Hash> matches) {
+        blockHeader = new BlockHeader(0, blockHash, prevHash, blockTime, targetDifficulty, merkleRoot, 0);
         blockHeader.setMatches(matches);
         this.onChain = onChain;
         this.blockHeight = blockHeight;
@@ -126,5 +123,77 @@ public class StoredHeader {
      */
     public void setChainWork(BigInteger chainWork) {
         this.chainWork = chainWork;
+    }
+
+    /**
+     * Returns the block hash
+     *
+     * @return                          Block hash
+     */
+    public Sha256Hash getHash() {
+        return blockHeader.getHash();
+    }
+
+    /**
+     * Returns the previous block hash
+     *
+     * @return                          Previous block hash
+     */
+    public Sha256Hash getPrevHash() {
+        return blockHeader.getPrevHash();
+    }
+
+    /**
+     * Returns the block time
+     *
+     * @return                          Block time
+     */
+    public long getBlockTime() {
+        return blockHeader.getBlockTime();
+    }
+
+    /**
+     * Returns the Merkle root
+     *
+     * @return                          Merkle root
+     */
+    public Sha256Hash getMerkleRoot() {
+        return blockHeader.getMerkleRoot();
+    }
+
+    /**
+     * Returns the target difficulty
+     *
+     * @return                          Target difficulty
+     */
+    public long getTargetDifficulty() {
+        return blockHeader.getTargetDifficulty();
+    }
+
+    /**
+     * Returns the block work
+     *
+     * @return                          Block work
+     */
+    public BigInteger getBlockWork() {
+        return blockHeader.getBlockWork();
+    }
+
+    /**
+     * Returns the list of matched transactions or null if there are no matched transactions
+     *
+     * @return                          List of matched transactions
+     */
+    public List<Sha256Hash> getMatches() {
+        return blockHeader.getMatches();
+}
+
+    /**
+     * Sets the list of matched transactions
+     *
+     * @param       matches             List of matched transactions or null if there are no matched transactions
+     */
+    public void setMatches(List<Sha256Hash> matches) {
+        blockHeader.setMatches(matches);
     }
 }

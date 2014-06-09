@@ -216,10 +216,10 @@ public abstract class Wallet {
     /**
      * Stores a block header
      *
-     * @param       header              Block header
+     * @param       storedHeader        Block header
      * @throws      WalletException     Unable to store the block header
      */
-    public abstract void storeHeader(BlockHeader header) throws WalletException;
+    public abstract void storeHeader(StoredHeader storedHeader) throws WalletException;
 
     /**
      * Updates the matched transactions for a block
@@ -236,7 +236,7 @@ public abstract class Wallet {
      * @return                          Block header or null if the block is not found
      * @throws      WalletException     Unable to retrieve the block header
      */
-    public abstract BlockHeader getHeader(Sha256Hash blockHash) throws WalletException;
+    public abstract StoredHeader getHeader(Sha256Hash blockHash) throws WalletException;
 
     /**
      * Returns the block header for the child of the specified block
@@ -245,7 +245,7 @@ public abstract class Wallet {
      * @return                          Child block header or null if no child is found
      * @throws      WalletException     Unable to retrieve the child block header
      */
-    public abstract BlockHeader getChildHeader(Sha256Hash parentHash) throws WalletException;
+    public abstract StoredHeader getChildHeader(Sha256Hash parentHash) throws WalletException;
 
     /**
      * Checks if this is a new transaction
@@ -373,7 +373,7 @@ public abstract class Wallet {
      * @throws      BlockNotFoundException  A block in the chain was not found
      * @throws      WalletException         Unable to get blocks from the database
      */
-    public abstract List<BlockHeader> getJunction(Sha256Hash chainHash)
+    public abstract List<StoredHeader> getJunction(Sha256Hash chainHash)
                                 throws BlockNotFoundException, WalletException;
 
     /**
@@ -387,7 +387,7 @@ public abstract class Wallet {
      * @throws      VerificationException   Chain verification failed
      * @throws      WalletException         Unable to update the database
      */
-    public abstract void setChainHead(List<BlockHeader> chainList) throws WalletException, VerificationException;
+    public abstract void setChainHead(List<StoredHeader> chainList) throws WalletException, VerificationException;
 
     /**
      * Closes the database

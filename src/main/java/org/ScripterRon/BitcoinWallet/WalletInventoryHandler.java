@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+
+import org.ScripterRon.BitcoinCore.InventoryItem;
+import org.ScripterRon.BitcoinCore.Message;
+import org.ScripterRon.BitcoinCore.MessageListener;
+import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.Peer;
+import org.ScripterRon.BitcoinCore.PeerAddress;
+import org.ScripterRon.BitcoinCore.Sha256Hash;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
