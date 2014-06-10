@@ -551,7 +551,7 @@ public class NetworkHandler implements Runnable {
                 if (buffer.position() == buffer.limit()) {
                     peer.setInputBuffer(null);
                     buffer.position(0);
-                    Message msg = new Message(buffer, peer, 0);
+                    Message msg = new Message(buffer, peer, null);
                     Parameters.messageQueue.put(msg);
                     break;
                 }
