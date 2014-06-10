@@ -14,15 +14,26 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+import static org.ScripterRon.BitcoinWallet.Main.log;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ScripterRon.BitcoinCore.FilterLoadMessage;
+import org.ScripterRon.BitcoinCore.GetAddressMessage;
+import org.ScripterRon.BitcoinCore.GetBlocksMessage;
+import org.ScripterRon.BitcoinCore.GetDataMessage;
+import org.ScripterRon.BitcoinCore.InventoryItem;
+import org.ScripterRon.BitcoinCore.Message;
+import org.ScripterRon.BitcoinCore.MessageHeader;
+import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.Peer;
+import org.ScripterRon.BitcoinCore.PeerAddress;
+import org.ScripterRon.BitcoinCore.PingMessage;
+import org.ScripterRon.BitcoinCore.Sha256Hash;
+import org.ScripterRon.BitcoinCore.Utils;
+import org.ScripterRon.BitcoinCore.VersionMessage;
 
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
-import java.net.Inet4Address;
 import java.net.StandardSocketOptions;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -49,9 +60,6 @@ import java.util.TimerTask;
  * The network handler terminates when its shutdown() method is called.
  */
 public class NetworkHandler implements Runnable {
-
-    /** Logger instance */
-    private static final Logger log = LoggerFactory.getLogger(NetworkHandler.class);
 
     /** Number of outbound connections */
     private static final int MAX_OUTBOUND_CONNECTIONS = 4;
@@ -204,7 +212,6 @@ public class NetworkHandler implements Runnable {
                     keyIterator.remove();
                 }
             }
-
             if (!networkShutdown) {
                 //
                 // Process completed messages
@@ -265,14 +272,10 @@ public class NetworkHandler implements Runnable {
                             }
                         }
                     });
-                    inactiveList.stream().map((chkPeer) -> {
+                    inactiveList.stream().forEach((chkPeer) -> {
                         log.info(String.format("Closing connection due to inactivity: %s",
-                                chkPeer.getAddress().toString()));
-                        return chkPeer;
-                    }).map((chkPeer) -> {
+                                               chkPeer.getAddress().toString()));
                         closeConnection(chkPeer);
-                        return chkPeer;
-                    }).forEach((chkPeer) -> {
                         synchronized(Parameters.lock) {
                             PeerAddress chkAddress = chkPeer.getAddress();
                             Parameters.peerMap.remove(chkAddress);
@@ -313,9 +316,12 @@ public class NetworkHandler implements Runnable {
         synchronized(Parameters.lock) {
             listeners.add(listener);
         }
-        connections.stream().filter((peer) -> (peer.getVersionCount() > 2)).forEach((peer) -> {
-            listener.connectionStarted(peer);
-        });
+        //
+        // Notify the new listener about existing connections
+        //
+        connections.stream()
+                .filter((peer) -> (peer.getVersionCount()>2))
+                .forEach((peer) -> listener.connectionStarted(peer));
     }
 
     /**
@@ -349,9 +355,6 @@ public class NetworkHandler implements Runnable {
                 key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
             }
         }
-        //
-        // Wakeup the network handler to send the message
-        //
         wakeup();
     }
 
@@ -359,26 +362,18 @@ public class NetworkHandler implements Runnable {
      * Broadcasts a message to all connected peers
      *
      * @param       msg             Message
-     *
-     * Block notifications will be sent to peers that are providing network services.
-     * Transaction notifications will be sent to peers that have requested transaction relays.
-     * Alert notifications will be sent to all peers and all alert listeners will be notified.
      */
     public void broadcastMessage(Message msg) {
-        //
-        // Send the message to each connected peer
-        //
         synchronized(Parameters.lock) {
-            connections.stream().filter((relayPeer) -> !(relayPeer.getVersionCount() < 2)).map((relayPeer) -> {
-                relayPeer.getOutputList().add(msg.clone(relayPeer));
-                return relayPeer;
-            }).map((relayPeer) -> relayPeer.getKey()).forEach((relayKey) -> {
-                relayKey.interestOps(relayKey.interestOps() | SelectionKey.OP_WRITE);
-            });
+            connections.stream()
+                .filter((relayPeer) -> (relayPeer.getVersionCount()>2))
+                .map((relayPeer) -> {
+                    relayPeer.getOutputList().add(msg.clone(relayPeer));
+                    return relayPeer;
+                })
+                .map((relayPeer) -> relayPeer.getKey())
+                .forEach((relayKey) -> relayKey.interestOps(relayKey.interestOps() | SelectionKey.OP_WRITE));
         }
-        //
-        // Wakeup the network listener to send the broadcast messages
-        //
         wakeup();
     }
 
@@ -393,21 +388,18 @@ public class NetworkHandler implements Runnable {
      */
     private boolean connectOutbound() {
         //
-        // Pick an IPv4 peer at random (no sense picking an IPv6 peer at this point since our
-        // internet provider doesn't support residential IPv6 addresses)
+        // Pick a random peer
         //
         PeerAddress address;
         boolean addressFound = true;
         synchronized(Parameters.lock) {
             int index = (int)((double)Parameters.peerAddresses.size() * Math.random());
             address = Parameters.peerAddresses.get(index);
-            if (!(address.getAddress() instanceof Inet4Address) ||
-                                address.isConnected() || (staticConnections && !address.isStatic())) {
+            if (address.isConnected() || (staticConnections && !address.isStatic())) {
                 addressFound = false;
                 for (int i=index+1; i<Parameters.peerAddresses.size(); i++) {
                     address = Parameters.peerAddresses.get(i);
-                    if ((address.getAddress() instanceof Inet4Address) &&
-                                !address.isConnected() && (!staticConnections || address.isStatic())) {
+                    if (!address.isConnected() && (!staticConnections || address.isStatic())) {
                         addressFound = true;
                         break;
                     }
@@ -416,8 +408,7 @@ public class NetworkHandler implements Runnable {
             if (!addressFound) {
                 for (int i=0; i<index; i++) {
                     address = Parameters.peerAddresses.get(i);
-                    if ((address.getAddress() instanceof Inet4Address) &&
-                                !address.isConnected() && (!staticConnections || address.isStatic())) {
+                    if (!address.isConnected() && (!staticConnections || address.isStatic())) {
                         addressFound = true;
                         break;
                     }
@@ -465,15 +456,14 @@ public class NetworkHandler implements Runnable {
         try {
             channel.finishConnect();
             log.info(String.format("Connection established to %s", address.toString()));
-            Message msg = VersionMessage.buildVersionMessage(peer, Parameters.wallet.getChainHeight(),
-                                                             Parameters.SOFTWARE_NAME);
+            Message msg = VersionMessage.buildVersionMessage(peer, null, Parameters.wallet.getChainHeight());
             synchronized(Parameters.lock) {
                 peer.getOutputList().add(msg);
                 key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
             }
             log.info(String.format("Sent 'version' message to %s", address.toString()));
         } catch (ConnectException exc) {
-            log.info(exc.getLocalizedMessage());
+            log.info(exc.getMessage());
             closeConnection(peer);
             if (!address.isStatic()) {
                 synchronized(Parameters.lock) {
@@ -654,9 +644,7 @@ public class NetworkHandler implements Runnable {
             // Notify listeners
             //
             if (peer.getVersionCount() > 2) {
-                listeners.stream().forEach((listener) -> {
-                    listener.connectionEnded(peer);
-                });
+                listeners.stream().forEach((listener) -> listener.connectionEnded(peer));
             }
             log.info(String.format("Connection closed with peer %s", address.toString()));
         } catch (IOException exc) {
@@ -738,9 +726,10 @@ public class NetworkHandler implements Runnable {
                     log.info(String.format("'getblocks' message sent to %s", address.toString()));
                     getBlocksSent = true;
                 }
-                listeners.stream().forEach((listener) -> {
-                    listener.connectionStarted(peer);
-                });
+                //
+                // Notify listeners about the new connection
+                //
+                listeners.stream().forEach((listener) -> listener.connectionStarted(peer));
             }
         }
     }
@@ -784,7 +773,7 @@ public class NetworkHandler implements Runnable {
             //
             invList.add(Parameters.wallet.getChainHead());
         }
-        return GetBlocksMessage.buildGetBlocksMessage(peer, invList);
+        return GetBlocksMessage.buildGetBlocksMessage(peer, invList, Sha256Hash.ZERO_HASH);
     }
 
     /**
@@ -876,9 +865,9 @@ public class NetworkHandler implements Runnable {
             //
             request.addPeer(peer);
             request.setTimeStamp(currentTime);
-            List<Sha256Hash> hashList = new ArrayList<>(1);
-            hashList.add(request.getHash());
-            Message msg = GetDataMessage.buildGetDataMessage(peer, request.getType(), hashList);
+            List<InventoryItem> invList = new ArrayList<>(1);
+            invList.add(new InventoryItem(request.getType(), request.getHash()));
+            Message msg = GetDataMessage.buildGetDataMessage(peer, invList);
             synchronized(Parameters.lock) {
                 peer.getOutputList().add(msg);
                 SelectionKey key = peer.getKey();

@@ -28,7 +28,7 @@ public interface WalletListener {
      *
      * @param       blockHeader     Block header
      */
-    public void addChainBlock(BlockHeader blockHeader);
+    public void addChainBlock(StoredHeader blockHeader);
 
     /**
      * Notification when one or more transactions have been updated

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
+import static org.ScripterRon.BitcoinWallet.Main.log;
 
 import org.ScripterRon.BitcoinCore.Address;
 import org.ScripterRon.BitcoinCore.BlockHeader;
@@ -172,7 +173,7 @@ public class WalletLdb extends Wallet {
                     //
                     chainHead = new Sha256Hash(NetParams.GENESIS_BLOCK_HASH);
                     chainHeight = 0;
-                    chainWork = BigInteger.valueOf(1);
+                    chainWork = BigInteger.ONE;
                     //
                     // Add the genesis block to the block chain
                     //
@@ -2145,7 +2146,7 @@ public class WalletLdb extends Wallet {
         public KeyEntry(byte[] entryData) throws EOFException {
             SerializedBuffer inBuffer = new SerializedBuffer(entryData);
             isChange = inBuffer.getBoolean();
-            creationTime = inBuffer.getLong();
+            creationTime = inBuffer.getVarLong();
             encPrivKey = inBuffer.getBytes();
             label = inBuffer.getString();
         }
@@ -2158,7 +2159,7 @@ public class WalletLdb extends Wallet {
         public byte[] getBytes() {
             SerializedBuffer outBuffer = new SerializedBuffer();
             outBuffer.putBoolean(isChange)
-                     .putLong(creationTime)
+                     .putVarLong(creationTime)
                      .putVarInt(encPrivKey.length)
                      .putBytes(encPrivKey)
                      .putString(label);

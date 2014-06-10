@@ -14,14 +14,31 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+import static org.ScripterRon.BitcoinWallet.Main.log;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ScripterRon.BitcoinCore.AddressMessage;
+import org.ScripterRon.BitcoinCore.AlertMessage;
+import org.ScripterRon.BitcoinCore.GetAddressMessage;
+import org.ScripterRon.BitcoinCore.GetDataMessage;
+import org.ScripterRon.BitcoinCore.HeadersMessage;
+import org.ScripterRon.BitcoinCore.InventoryMessage;
+import org.ScripterRon.BitcoinCore.MerkleBlockMessage;
+import org.ScripterRon.BitcoinCore.Message;
+import org.ScripterRon.BitcoinCore.MessageHeader;
+import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.NotFoundMessage;
+import org.ScripterRon.BitcoinCore.Peer;
+import org.ScripterRon.BitcoinCore.PeerAddress;
+import org.ScripterRon.BitcoinCore.PingMessage;
+import org.ScripterRon.BitcoinCore.PongMessage;
+import org.ScripterRon.BitcoinCore.RejectMessage;
+import org.ScripterRon.BitcoinCore.SerializedBuffer;
+import org.ScripterRon.BitcoinCore.TransactionMessage;
+import org.ScripterRon.BitcoinCore.VerificationException;
+import org.ScripterRon.BitcoinCore.VersionAckMessage;
+import org.ScripterRon.BitcoinCore.VersionMessage;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.EOFException;
 
 /**
  * A message handler processes incoming messages on a separate dispatching thread.
@@ -33,9 +50,6 @@ import java.nio.ByteBuffer;
  * is available.
  */
 public class MessageHandler implements Runnable {
-
-    /** Logger instance */
-    private static final Logger log = LoggerFactory.getLogger(MessageHandler.class);
 
     /** Message handler thread */
     private Thread handlerThread;
@@ -90,136 +104,119 @@ public class MessageHandler implements Runnable {
      * @param       msg             Message
      */
     private void processMessage(Message msg) throws InterruptedException {
-        Peer peer = null;
-        PeerAddress address = null;
-        String cmd = null;
+        Peer peer = msg.getPeer();
+        PeerAddress address = peer.getAddress();
+        String cmd = "N/A";
         int reasonCode = 0;
         int cmdOp = 0;
         try {
-            peer = msg.getPeer();
-            address = peer.getAddress();
-            ByteBuffer msgBuffer = msg.getBuffer();
-            byte[] msgBytes = msgBuffer.array();
-            ByteArrayInputStream inStream = new ByteArrayInputStream(msgBytes);
+            SerializedBuffer inBuffer = new SerializedBuffer(msg.getBuffer());
             msg.setBuffer(null);
             //
             // Process the message header and get the command name
             //
-            cmd = MessageHeader.processMessage(inStream, msgBytes);
+            cmd = MessageHeader.processMessage(inBuffer);
             Integer cmdLookup = MessageHeader.cmdMap.get(cmd);
             if (cmdLookup != null)
                 cmdOp = cmdLookup;
             else
                 cmdOp = 0;
             msg.setCommand(cmdOp);
+            log.debug(String.format("Processing '%s' message from %s", cmd, address.toString()));
             //
             // Process the message
             //
             switch (cmdOp) {
                 case MessageHeader.VERSION_CMD:
                     //
-                    // Process the 'version' message and generate the 'verack' response
+                    // Process the 'version' message
                     //
-                    VersionMessage.processVersionMessage(msg, inStream, Parameters.inventoryHandler);
-                    VersionAckMessage.buildVersionResponse(msg);
-                    peer.incVersionCount();
-                    address.setServices(peer.getServices());
-                    log.info(String.format("Peer %s: Protocol level %d, Services %d, Agent %s, Height %d",
-                             address.toString(), peer.getVersion(), peer.getServices(),
-                             peer.getUserAgent(), peer.getHeight()));
+                    VersionMessage.processVersionMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.VERACK_CMD:
                     //
                     // Process the 'verack' message
                     //
-                    peer.incVersionCount();
+                    VersionAckMessage.processVersionAckMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.ADDR_CMD:
                     //
                     // Process the 'addr' message
                     //
-                    AddressMessage.processAddressMessage(msg, inStream, Parameters.inventoryHandler);
+                    AddressMessage.processAddressMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.INV_CMD:
                     //
                     // Process the 'inv' message
                     //
-                    InventoryMessage.processInventoryMessage(msg, inStream, Parameters.inventoryHandler);
+                    InventoryMessage.processInventoryMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.GETDATA_CMD:
                     //
                     // Process the 'getdata' message
                     //
-                    GetDataMessage.processGetDataMessage(msg, inStream, Parameters.inventoryHandler);
+                    GetDataMessage.processGetDataMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.HEADERS_CMD:
                     //
                     // Process the 'headers' message
                     //
-                    HeadersMessage.processHeadersMessage(msg, inStream, Parameters.inventoryHandler);
+                    HeadersMessage.processHeadersMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.MERKLEBLOCK_CMD:
                     //
                     // Process the 'merkleblock' message
                     //
-                    MerkleBlockMessage.processMerkleBlockMessage(msg, inStream, Parameters.inventoryHandler);
+                    MerkleBlockMessage.processMerkleBlockMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.TX_CMD:
                     //
                     // Process the 'tx' message
                     //
-                    TransactionMessage.processTransactionMessage(msg, inStream, Parameters.inventoryHandler);
+                    TransactionMessage.processTransactionMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.GETADDR_CMD:
                     //
                     // Process the 'getaddr' message
                     //
-                    Message addrMsg = AddressMessage.buildAddressMessage(peer, Parameters.peerAddresses);
-                    msg.setBuffer(addrMsg.getBuffer());
-                    msg.setCommand(addrMsg.getCommand());
+                    GetAddressMessage.processGetAddressMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.NOTFOUND_CMD:
                     //
                     // Process the 'notfound' message
                     //
-                    NotFoundMessage.processNotFoundMessage(msg, inStream, Parameters.inventoryHandler);
+                    NotFoundMessage.processNotFoundMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.PING_CMD:
                     //
                     // Process the 'ping' message
                     //
-                    PingMessage.processPingMessage(msg, inStream, Parameters.inventoryHandler);
+                    PingMessage.processPingMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.PONG_CMD:
                     //
                     // Process the 'pong' message
                     //
-                    peer.setPing(false);
-                    log.info(String.format("'pong' response received from %s", address.toString()));
+                    PongMessage.processPongMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.REJECT_CMD:
                     //
                     // Process the 'reject' message
                     //
-                    RejectMessage.processRejectMessage(msg, inStream, Parameters.inventoryHandler);
+                    RejectMessage.processRejectMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 case MessageHeader.ALERT_CMD:
                     //
                     // Process the 'alert' message
                     //
-                    Alert alert = AlertMessage.processAlertMessage(msg, inStream);
-                    if (alert.getExpireTime() > System.currentTimeMillis()/1000)
-                        log.warn(String.format("**** Alert %d ****\n  %s",
-                                               alert.getID(), alert.getMessage()));
+                    AlertMessage.processAlertMessage(msg, inBuffer, Parameters.messageListener);
                     break;
                 default:
-                    log.error(String.format("Unrecognized '%s' message from %s", cmd, address.toString()));
-                    Main.dumpData("Unrecognized Message", msgBytes, Math.min(msgBytes.length, 80));
+                    log.error(String.format("Unsupported '%s' message from %s", cmd, address.toString()));
             }
-        } catch (IOException exc) {
-            log.error(String.format("I/O error while processing '%s' message from %s",
-                                    cmd!=null ? cmd : "N/A",
-                                    address.toString()), exc);
+        } catch (EOFException exc) {
+            log.error(String.format("End-of-data while processing '%s' message from %s",
+                                    cmd, address.toString()), exc);
             reasonCode = NetParams.REJECT_MALFORMED;
             if (cmdOp == MessageHeader.VERSION_CMD)
                 peer.setDisconnect(true);
@@ -230,8 +227,7 @@ public class MessageHandler implements Runnable {
             }
         } catch (VerificationException exc) {
             log.error(String.format("Message verification failed for '%s' message from %s\n  %s\n  %s",
-                                    cmd!=null ? cmd : "N/A",
-                                    address.toString(), exc.getMessage(), exc.getHash().toString()));
+                                    cmd, address.toString(), exc.getMessage(), exc.getHash().toString()));
             if (cmdOp == MessageHeader.VERSION_CMD)
                 peer.setDisconnect(true);
             reasonCode = exc.getReason();

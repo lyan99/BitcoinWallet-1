@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+import static org.ScripterRon.BitcoinWallet.Main.log;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ScripterRon.BitcoinCore.Address;
+import org.ScripterRon.BitcoinCore.BlockHeader;
+import org.ScripterRon.BitcoinCore.ECKey;
+import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.OutPoint;
+import org.ScripterRon.BitcoinCore.ScriptOpCodes;
+import org.ScripterRon.BitcoinCore.Sha256Hash;
+import org.ScripterRon.BitcoinCore.Transaction;
+import org.ScripterRon.BitcoinCore.TransactionInput;
+import org.ScripterRon.BitcoinCore.TransactionOutput;
+import org.ScripterRon.BitcoinCore.VerificationException;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -34,9 +43,6 @@ import java.util.Map;
  * until data is available.
  */
 public class DatabaseHandler implements Runnable {
-
-    /** Logger instance */
-    private static final Logger log = LoggerFactory.getLogger(DatabaseHandler.class);
 
     /** Database handler thread */
     private Thread handlerThread;
@@ -115,10 +121,11 @@ public class DatabaseHandler implements Runnable {
         try {
             while (!handlerShutdown) {
                 Object obj = Parameters.databaseQueue.take();
-                if (obj instanceof BlockHeader)
-                    processBlock((BlockHeader)obj);
-                else if (obj instanceof Transaction)
+                if (obj instanceof BlockHeader) {
+                    processBlock(new StoredHeader((BlockHeader)obj));
+                } else if (obj instanceof Transaction) {
                     processTransaction((Transaction)obj);
+                }
             }
         } catch (InterruptedException exc) {
             if (!handlerShutdown)
@@ -137,7 +144,7 @@ public class DatabaseHandler implements Runnable {
      *
      * @param       blockHeader         Block header
      */
-    private void processBlock(BlockHeader blockHeader) {
+    private void processBlock(StoredHeader blockHeader) {
         Sha256Hash blockHash = blockHeader.getHash();
         try {
             //
@@ -197,7 +204,7 @@ public class DatabaseHandler implements Runnable {
                     // We are down-level, so see if this block is on the chain.  If it isn't,
                     // update the chain.
                     //
-                    BlockHeader chkHeader = Parameters.wallet.getHeader(blockHash);
+                    StoredHeader chkHeader = Parameters.wallet.getHeader(blockHash);
                     if (!chkHeader.isOnChain()) {
                         updateChain(blockHeader);
                         if (blockHeader.isOnChain()) {
@@ -228,16 +235,16 @@ public class DatabaseHandler implements Runnable {
      * @throws      VerificationException   Checkpoint verification failed
      * @throws      WalletException         Unable to process the block
      */
-    private void updateChain(BlockHeader blockHeader) throws VerificationException, WalletException {
+    private void updateChain(StoredHeader blockHeader) throws VerificationException, WalletException {
         //
         // Locate the junction block for the chain represented by this block
         //
-        List<BlockHeader> chainList = Parameters.wallet.getJunction(blockHeader.getPrevHash());
+        List<StoredHeader> chainList = Parameters.wallet.getJunction(blockHeader.getPrevHash());
         chainList.add(blockHeader);
         //
         // Update chain work and block height for each block in the new chain
         //
-        BlockHeader chainHeader = chainList.get(0);
+        StoredHeader chainHeader = chainList.get(0);
         BigInteger chainWork = chainHeader.getChainWork();
         int blockHeight = chainHeader.getBlockHeight();
         for (int i=1; i<chainList.size(); i++) {
@@ -273,7 +280,7 @@ public class DatabaseHandler implements Runnable {
      */
     private Sha256Hash processChildBlock(Sha256Hash parentHash) throws VerificationException, WalletException {
         Sha256Hash nextParent = null;
-        BlockHeader childHeader = Parameters.wallet.getChildHeader(parentHash);
+        StoredHeader childHeader = Parameters.wallet.getChildHeader(parentHash);
         if (childHeader != null && !childHeader.isOnChain()) {
             updateChain(childHeader);
             if (childHeader.isOnChain())
@@ -304,7 +311,7 @@ public class DatabaseHandler implements Runnable {
                     txMap.remove(txHash);
             }
             if (blockHash != null) {
-                BlockHeader blockHeader = Parameters.wallet.getHeader(blockHash);
+                StoredHeader blockHeader = Parameters.wallet.getHeader(blockHash);
                 txTime = blockHeader.getBlockTime();
                 if (!blockHeader.isOnChain())
                     blockHash = Sha256Hash.ZERO_HASH;

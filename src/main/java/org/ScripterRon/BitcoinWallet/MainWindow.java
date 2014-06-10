@@ -14,10 +14,16 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
-import org.ScripterRon.BitcoinCore.*;
+import static org.ScripterRon.BitcoinWallet.Main.log;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ScripterRon.BitcoinCore.AddressFormatException;
+import org.ScripterRon.BitcoinCore.DumpedPrivateKey;
+import org.ScripterRon.BitcoinCore.ECKey;
+import org.ScripterRon.BitcoinCore.InventoryItem;
+import org.ScripterRon.BitcoinCore.InventoryMessage;
+import org.ScripterRon.BitcoinCore.Message;
+import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.Peer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -36,9 +42,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
-import javax.swing.JMenu;
 import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.WindowConstants;
 
@@ -46,9 +50,6 @@ import javax.swing.WindowConstants;
  * This is the main application window
  */
 public final class MainWindow extends JFrame implements ActionListener, ConnectionListener, WalletListener {
-
-    /** Create our logger */
-    private static final Logger log = LoggerFactory.getLogger(MainWindow.class);
 
     /** Main window is minimized */
     private boolean windowMinimized = false;
@@ -195,14 +196,14 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
             try {
                 List<SendTransaction> sendList = Parameters.wallet.getSendTxList();
                 if (!sendList.isEmpty()) {
-                    List<Sha256Hash> invList = new ArrayList<>(sendList.size());
+                    List<InventoryItem> invList = new ArrayList<>(sendList.size());
                     for (SendTransaction sendTx : sendList) {
                         int depth = Parameters.wallet.getTxDepth(sendTx.getTxHash());
                         if (depth == 0)
-                            invList.add(sendTx.getTxHash());
+                            invList.add(new InventoryItem(NetParams.INV_TX, sendTx.getTxHash()));
                     }
                     if (!invList.isEmpty()) {
-                        Message invMsg = InventoryMessage.buildInventoryMessage(peer, NetParams.INV_TX, invList);
+                        Message invMsg = InventoryMessage.buildInventoryMessage(peer, invList);
                         Parameters.networkHandler.sendMessage(invMsg);
                         log.info(String.format("Pending transaction inventory sent to %s",
                                                peer.getAddress().toString()));
@@ -229,7 +230,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
      * @param       blockHeader     Block header
      */
     @Override
-    public void addChainBlock(BlockHeader blockHeader) {
+    public void addChainBlock(StoredHeader blockHeader) {
         //
         // Update the table status column for the new chain depth.  Indicate we are
         // no longer synchronizing with the network if we are now caught up.

@@ -21,9 +21,6 @@ import org.ScripterRon.BitcoinCore.ECKey;
 import org.ScripterRon.BitcoinCore.Sha256Hash;
 import org.ScripterRon.BitcoinCore.VerificationException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
@@ -35,9 +32,6 @@ import java.util.Map;
  * as the private keys have been exported and then imported into the new wallet.</p>
  */
 public abstract class Wallet {
-
-    /** Logger instance */
-    protected static final Logger log = LoggerFactory.getLogger(Wallet.class);
 
     /** Block chain checkpoints */
     protected static final Map<Integer, Sha256Hash> checkpoints = new HashMap<>();

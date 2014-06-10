@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
+
 import org.ScripterRon.BitcoinCore.*;
 
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ import javax.swing.*;
 public class Main {
 
     /** Logger instance */
-    private static final Logger log = LoggerFactory.getLogger(Main.class);
+    public static final Logger log = LoggerFactory.getLogger("org.ScripterRon.BitcoinWallet");
 
     /** Conversion value for BTC to Satoshi (1 Satoshi = 0.00000001 BTC) */
     private static final BigDecimal SATOSHI = new BigDecimal("100000000");
@@ -149,10 +150,6 @@ public class Main {
             if (testNetwork)
                 dataPath = dataPath+fileSeparator+"TestNet";
             //
-            // Initialize the BitcoinCore library
-            //
-            NetParams.configure(testNetwork);
-            //
             // Create the data directory if it doesn't exist
             //
             File dirFile = new File(dataPath);
@@ -186,7 +183,6 @@ public class Main {
             //
             // Initialize the network parameters
             //
-            NetParams.configure(testNetwork);
             String genesisName;
             if (testNetwork) {
                 genesisName = "GenesisBlock/GenesisBlockTest.dat";
@@ -228,6 +224,10 @@ public class Main {
                     properties.load(in);
                 }
             }
+            //
+            // Initialize the BitcoinCore library
+            //
+            NetParams.configure(testNetwork, Parameters.MIN_PROTOCOL_VERSION, Parameters.SOFTWARE_NAME, 0);
             //
             // Start our services on the GUI thread so we can display dialogs
             //
@@ -284,15 +284,15 @@ public class Main {
             //
             int elementCount = Parameters.keys.size()*2 + 15;
             BloomFilter filter = new BloomFilter(elementCount);
-            for (ECKey key : Parameters.keys) {
+            Parameters.keys.stream().forEach((key) -> {
                 filter.insert(key.getPubKey());
                 filter.insert(key.getPubKeyHash());
-            }
+            });
             Parameters.bloomFilter = filter;
             //
             // Create our inventory handler
             //
-            Parameters.inventoryHandler = new WalletInventoryHandler();
+            Parameters.messageListener = new WalletMessageListener();
             //
             // Start the worker threads
             //

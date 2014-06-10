@@ -25,6 +25,7 @@ import org.ScripterRon.BitcoinCore.PeerAddress;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -33,6 +34,9 @@ import java.util.concurrent.ArrayBlockingQueue;
  * Global parameters for BitcoinWallet
  */
 public class Parameters {
+
+    /** Minimum supported protocol level (we require SPV support) */
+    public static final int MIN_PROTOCOL_VERSION = 70001;
 
     /** Default network port */
     public static final int DEFAULT_PORT = 8333;
@@ -68,10 +72,10 @@ public class Parameters {
     public static final ArrayBlockingQueue<Object> databaseQueue = new ArrayBlockingQueue<>(50);
 
     /** Peer addresses */
-    public static final List<PeerAddress> peerAddresses = new ArrayList<>(500);
+    public static final List<PeerAddress> peerAddresses = new LinkedList<>();
 
     /** Peer address map */
-    public static final Map<PeerAddress, PeerAddress> peerMap = new HashMap<>(250);
+    public static final Map<PeerAddress, PeerAddress> peerMap = new HashMap<>();
 
     /** Completed messages */
     public static final List<Message> completedMessages = new ArrayList<>(50);
@@ -89,7 +93,7 @@ public class Parameters {
     public static DatabaseHandler databaseHandler;
 
     /** Inventory handler */
-    public static MessageListener inventoryHandler;
+    public static MessageListener messageListener;
 
     /** Wallet database */
     public static Wallet wallet;
