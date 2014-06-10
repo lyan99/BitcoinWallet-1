@@ -27,34 +27,20 @@ import org.ScripterRon.BitcoinCore.NotFoundMessage;
 import org.ScripterRon.BitcoinCore.Peer;
 import org.ScripterRon.BitcoinCore.PeerAddress;
 import org.ScripterRon.BitcoinCore.PongMessage;
+import org.ScripterRon.BitcoinCore.RejectMessage;
 import org.ScripterRon.BitcoinCore.Sha256Hash;
 import org.ScripterRon.BitcoinCore.Transaction;
 import org.ScripterRon.BitcoinCore.TransactionMessage;
 import org.ScripterRon.BitcoinCore.VersionAckMessage;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Handle inventory requests and responses
  */
 public class WalletMessageListener extends AbstractMessageListener {
-
-    /** Reject message reason codes */
-    private static final Map<Integer, String> reasonCodes = new HashMap<>();
-    static {
-        reasonCodes.put(NetParams.REJECT_MALFORMED, "Malformed");
-        reasonCodes.put(NetParams.REJECT_INVALID, "Invalid");
-        reasonCodes.put(NetParams.REJECT_OBSOLETE, "Obsolete");
-        reasonCodes.put(NetParams.REJECT_DUPLICATE, "Duplicate");
-        reasonCodes.put(NetParams.REJECT_NONSTANDARD, "Nonstandard");
-        reasonCodes.put(NetParams.REJECT_DUST, "Dust");
-        reasonCodes.put(NetParams.REJECT_INSUFFICIENT_FEE, "Insufficient fee");
-        reasonCodes.put(NetParams.REJECT_CHECKPOINT, "Checkpoint");
-    }
 
     /**
      * Handle an inventory request
@@ -63,18 +49,19 @@ public class WalletMessageListener extends AbstractMessageListener {
      * should send the inventory items to the requesting peer.  A 'notfound' message
      * should be returned to the requesting peer if one or more items cannot be sent.</p>
      *
-     * @param       peer            Peer requesting the inventory item
+     * @param       msg             Message
      * @param       invList         Inventory item list
      */
     @Override
-    public void sendInventory(Peer peer, List<InventoryItem> invList) {
+    public void sendInventory(Message msg, List<InventoryItem> invList) {
+        Peer peer = msg.getPeer();
         List<InventoryItem> notFoundList = new ArrayList<>(invList.size());
         //
         // Process the inventory list and request new transactions
         //
         invList.stream().forEach((item) -> {
             switch (item.getType()) {
-                case NetParams.INV_TX:
+                case InventoryItem.INV_TX:
                     try {
                         SendTransaction sendTx = Parameters.wallet.getSendTx(item.getHash());
                         if (sendTx != null) {
@@ -100,8 +87,8 @@ public class WalletMessageListener extends AbstractMessageListener {
         // Send a 'notfound' message if we couldn't process all of the requests
         //
         if (!notFoundList.isEmpty()) {
-            Message msg = NotFoundMessage.buildNotFoundMessage(peer, notFoundList);
-            Parameters.networkHandler.sendMessage(msg);
+            Message invMsg = NotFoundMessage.buildNotFoundMessage(peer, notFoundList);
+            Parameters.networkHandler.sendMessage(invMsg);
         }
     }
 
@@ -111,11 +98,12 @@ public class WalletMessageListener extends AbstractMessageListener {
      * <p>This method is called when an 'inv' message is received.  The application
      * should request any needed inventory items from the peer.</p>
      *
-     * @param       peer            Peer announcing inventory item
+     * @param       msg             Message
      * @param       invList         Inventory item list
      */
     @Override
-    public void requestInventory(Peer peer, List<InventoryItem> invList) {
+    public void requestInventory(Message msg, List<InventoryItem> invList) {
+        Peer peer = msg.getPeer();
         //
         // Process the inventory list and request new transactions and blocks.  We also
         // need to request a block already in our database if we are catching up to the
@@ -125,9 +113,9 @@ public class WalletMessageListener extends AbstractMessageListener {
         invList.stream().forEach((item) -> {
             try {
                 switch (item.getType()) {
-                    case NetParams.INV_TX:
+                    case InventoryItem.INV_TX:
                         if (Parameters.wallet.isNewTransaction(item.getHash())) {
-                            PeerRequest request = new PeerRequest(item.getHash(), NetParams.INV_TX, peer);
+                            PeerRequest request = new PeerRequest(item.getHash(), InventoryItem.INV_TX, peer);
                             synchronized(Parameters.lock) {
                             if (!Parameters.pendingRequests.contains(request) &&
                                             !Parameters.processedRequests.contains(request))
@@ -135,10 +123,11 @@ public class WalletMessageListener extends AbstractMessageListener {
                             }
                         }
                         break;
-                    case NetParams.INV_BLOCK:
+                    case InventoryItem.INV_BLOCK:
                         if (Parameters.wallet.isNewBlock(item.getHash()) ||
-                                    Parameters.networkChainHeight > Parameters.wallet.getChainHeight()) {
-                            PeerRequest request = new PeerRequest(item.getHash(), NetParams.INV_FILTERED_BLOCK, peer);
+                                        Parameters.networkChainHeight > Parameters.wallet.getChainHeight()) {
+                            PeerRequest request = new PeerRequest(item.getHash(),
+                                        InventoryItem.INV_FILTERED_BLOCK, peer);
                             synchronized(Parameters.lock) {
                                 if (!Parameters.pendingRequests.contains(request) &&
                                             !Parameters.processedRequests.contains(request))
@@ -161,11 +150,11 @@ public class WalletMessageListener extends AbstractMessageListener {
      * not found.  The request can be discarded or retried by sending it to a different
      * peer.</p>
      *
-     * @param       peer            Peer sending the response
+     * @param       msg             Message
      * @param       invList         Inventory item list
      */
     @Override
-    public void requestNotFound(Peer peer, List<InventoryItem> invList) {
+    public void requestNotFound(Message msg, List<InventoryItem> invList) {
         //
         // Process the inventory list and retry the failing requests
         //
@@ -190,11 +179,11 @@ public class WalletMessageListener extends AbstractMessageListener {
      * <p>This method is called when an 'addr' message is received.  The address list
      * contains peers that have been active recently.</p>
      *
-     * @param       peer            Peer sending the address list
+     * @param       msg             Message
      * @param       addresses       Peer address list
      */
     @Override
-    public void processAddresses(Peer peer, List<PeerAddress> addresses) {
+    public void processAddresses(Message msg, List<PeerAddress> addresses) {
         //
         // Add the peer address to the front of the address list since they
         // are presumably more current than what we have
@@ -217,11 +206,11 @@ public class WalletMessageListener extends AbstractMessageListener {
      *
      * <p>This method is called when an 'alert' message is received.</p>
      *
-     * @param       peer            Peer sending the alert message
+     * @param       msg             Message
      * @param       alert           Alert
      */
     @Override
-    public void processAlert(Peer peer, Alert alert) {
+    public void processAlert(Message msg, Alert alert) {
         //
         // Add the alert message to the log
         //
@@ -235,11 +224,11 @@ public class WalletMessageListener extends AbstractMessageListener {
      *
      * <p>This method is called when a 'headers' message is received.</p>
      *
-     * @param       peer            Peer sending the headers
+     * @param       msg             Message
      * @param       hdrList         Block header list
      */
     @Override
-    public void processBlockHeaders(Peer peer, List<BlockHeader> hdrList) {
+    public void processBlockHeaders(Message msg, List<BlockHeader> hdrList) {
         //
         // Add the block headers to the database handler queue for processing
         //
@@ -258,10 +247,10 @@ public class WalletMessageListener extends AbstractMessageListener {
      * <p>This method is called when a 'getaddr' message is received.  The application should
      * call AddressMessage.buildAddressMessage() to build the response message.</p>
      *
-     * @param       peer            Peer sending the message
+     * @param       msg             Message
      */
     @Override
-    public void processGetAddress(Peer peer) {
+    public void processGetAddress(Message msg) {
         //
         // Send our address list to the requester
         //
@@ -269,8 +258,8 @@ public class WalletMessageListener extends AbstractMessageListener {
         synchronized(Parameters.lock) {
             addresses = new ArrayList<>(Parameters.peerAddresses);
         }
-        Message msg = AddressMessage.buildAddressMessage(peer, addresses, null);
-        Parameters.networkHandler.sendMessage(msg);
+        Message addrMsg = AddressMessage.buildAddressMessage(msg.getPeer(), addresses, null);
+        Parameters.networkHandler.sendMessage(addrMsg);
     }
 
     /**
@@ -278,16 +267,16 @@ public class WalletMessageListener extends AbstractMessageListener {
      *
      * <p>This method is called when a 'merkleblock' message is received.</p>
      *
-     * @param       peer            Peer sending the Merkle block
+     * @param       msg             Message
      * @param       blkHeader       Merkle block header
      */
     @Override
-    public void processMerkleBlock(Peer peer, BlockHeader blkHeader) {
+    public void processMerkleBlock(Message msg, BlockHeader blkHeader) {
         //
         // Add the block header to the database handler queue for processing
         //
         try {
-            requestCompleted(peer, NetParams.INV_FILTERED_BLOCK, blkHeader.getHash());
+            requestCompleted(InventoryItem.INV_FILTERED_BLOCK, blkHeader.getHash());
             Parameters.databaseQueue.put(blkHeader);
         } catch (InterruptedException exc) {
             log.error("Thread interrupted while adding to database handler queue", exc);
@@ -300,13 +289,13 @@ public class WalletMessageListener extends AbstractMessageListener {
      * <p>This method is called when a 'ping' message is received.  The application should
      * return a 'pong' message to the sender.</p>
      *
-     * @param       peer            Peer sending the ping
+     * @param       msg             Message
      * @param       nonce           Nonce
      */
     @Override
-    public void processPing(Peer peer, long nonce) {
-        Message msg = PongMessage.buildPongMessage(peer, nonce);
-        Parameters.networkHandler.sendMessage(msg);
+    public void processPing(Message msg, long nonce) {
+        Message pongMsg = PongMessage.buildPongMessage(msg.getPeer(), nonce);
+        Parameters.networkHandler.sendMessage(pongMsg);
     }
 
     /**
@@ -314,11 +303,12 @@ public class WalletMessageListener extends AbstractMessageListener {
      *
      * <p>This method is called when a 'pong' message is received.</p>
      *
-     * @param       peer            Peer sending the pong
+     * @param       msg             Message
      * @param       nonce           Nonce
      */
     @Override
-    public void processPong(Peer peer, long nonce) {
+    public void processPong(Message msg, long nonce) {
+        Peer peer = msg.getPeer();
         peer.setPing(false);
         log.info(String.format("'pong' response received from %s", peer.getAddress().toString()));
     }
@@ -328,19 +318,19 @@ public class WalletMessageListener extends AbstractMessageListener {
      *
      * <p>This method is called when a 'reject' message is received.</p>
      *
-     * @param       peer            Peer sending the message
+     * @param       msg             Message
      * @param       cmd             Failing message command
      * @param       reasonCode      Failure reason code
      * @param       description     Description of the failure
      * @param       hash            Item hash or Sha256Hash.ZERO_HASH
      */
     @Override
-    public void processReject(Peer peer, String cmd, int reasonCode, String description, Sha256Hash hash) {
-        String reason = reasonCodes.get(reasonCode);
+    public void processReject(Message msg, String cmd, int reasonCode, String description, Sha256Hash hash) {
+        String reason = RejectMessage.reasonCodes.get(reasonCode);
         if (reason == null)
             reason = "N/A";
         log.error(String.format("Message rejected by %s\n  Command %s, Reason %s - %s\n  %s",
-                                peer.getAddress().toString(), cmd, reason, description,
+                                msg.getPeer().getAddress().toString(), cmd, reason, description,
                                 hash.toString()));
     }
 
@@ -349,13 +339,13 @@ public class WalletMessageListener extends AbstractMessageListener {
      *
      * <p>This method is called when a 'tx' message is received.</p>
      *
-     * @param       peer            Peer sending the transaction
+     * @param       msg             Message
      * @param       tx              Transaction
      */
     @Override
-    public void processTransaction(Peer peer, Transaction tx) {
+    public void processTransaction(Message msg, Transaction tx) {
         try {
-            requestCompleted(peer, NetParams.INV_TX, tx.getHash());
+            requestCompleted(InventoryItem.INV_TX, tx.getHash());
             Parameters.databaseQueue.put(tx);
         } catch (InterruptedException exc) {
             log.error("Thread interrupted while adding to database handler queue", exc);
@@ -368,11 +358,12 @@ public class WalletMessageListener extends AbstractMessageListener {
      * <p>This method is called when a 'version' message is received.  The application
      * should return a 'verack' message to the sender if the connection is accepted.</p>
      *
-     * @param       peer            Peer sending the message
+     * @param       msg             Message
      * @param       localAddress    Local address as seen by the peer
      */
     @Override
-    public void processVersion(Peer peer, PeerAddress localAddress) {
+    public void processVersion(Message msg, PeerAddress localAddress) {
+        Peer peer = msg.getPeer();
         //
         // Disconnect the peer if it doesn't provide node services.  Otherwise, increment
         // the version handshake stage.
@@ -382,8 +373,8 @@ public class WalletMessageListener extends AbstractMessageListener {
             log.info(String.format("Connection rejected from %s", peer.getAddress().toString()));
         } else {
             peer.incVersionCount();
-            Message msg = VersionAckMessage.buildVersionAckMessage(peer);
-            Parameters.networkHandler.sendMessage(msg);
+            Message ackMsg = VersionAckMessage.buildVersionAckMessage(peer);
+            Parameters.networkHandler.sendMessage(ackMsg);
             log.info(String.format("Peer %s: Protocol level %d, Services %d, Agent %s, Height %d",
                     peer.getAddress().toString(), peer.getVersion(), peer.getServices(),
                     peer.getUserAgent(), peer.getHeight()));
@@ -395,24 +386,23 @@ public class WalletMessageListener extends AbstractMessageListener {
      *
      * <p>This method is called when a 'verack' message is received.</p>
      *
-     * @param       peer            Peer sending the message
+     * @param       msg             Message
      */
     @Override
-    public void processVersionAck(Peer peer) {
+    public void processVersionAck(Message msg) {
         //
         // Increment the version handshake stage
         //
-        peer.incVersionCount();
+        msg.getPeer().incVersionCount();
     }
 
     /**
      * Process a completed request
      *
-     * @param       peer            Peer sending the response
      * @param       type            Type of inventory item (INV_FILTERED_BLOCK or INV_TX)
      * @param       hash            Item hash
      */
-    private void requestCompleted(Peer peer, int type, Sha256Hash hash) {
+    private void requestCompleted(int type, Sha256Hash hash) {
         synchronized(Parameters.lock) {
             Iterator<PeerRequest> it = Parameters.processedRequests.iterator();
             while (it.hasNext()) {

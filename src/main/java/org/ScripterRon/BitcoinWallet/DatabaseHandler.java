@@ -19,6 +19,7 @@ import static org.ScripterRon.BitcoinWallet.Main.log;
 import org.ScripterRon.BitcoinCore.Address;
 import org.ScripterRon.BitcoinCore.BlockHeader;
 import org.ScripterRon.BitcoinCore.ECKey;
+import org.ScripterRon.BitcoinCore.InventoryItem;
 import org.ScripterRon.BitcoinCore.NetParams;
 import org.ScripterRon.BitcoinCore.OutPoint;
 import org.ScripterRon.BitcoinCore.ScriptOpCodes;
@@ -100,7 +101,7 @@ public class DatabaseHandler implements Runnable {
         if (rescanHeight > 0) {
             log.info(String.format("Block chain rescan started at height %d", rescanHeight));
             Sha256Hash blockHash = Parameters.wallet.getBlockHash(rescanHeight);
-            PeerRequest request = new PeerRequest(blockHash, NetParams.INV_FILTERED_BLOCK);
+            PeerRequest request = new PeerRequest(blockHash, InventoryItem.INV_FILTERED_BLOCK);
             synchronized(Parameters.lock) {
                 Parameters.pendingRequests.add(request);
             }
@@ -193,7 +194,7 @@ public class DatabaseHandler implements Runnable {
                         });
                     } else {
                         Sha256Hash nextHash = Parameters.wallet.getBlockHash(rescanHeight);
-                        PeerRequest request = new PeerRequest(nextHash, NetParams.INV_FILTERED_BLOCK);
+                        PeerRequest request = new PeerRequest(nextHash, InventoryItem.INV_FILTERED_BLOCK);
                         synchronized(Parameters.lock) {
                             Parameters.pendingRequests.add(request);
                         }
@@ -216,7 +217,7 @@ public class DatabaseHandler implements Runnable {
                 }
             }
         } catch (BlockNotFoundException exc) {
-            PeerRequest request = new PeerRequest(exc.getHash(), NetParams.INV_FILTERED_BLOCK);
+            PeerRequest request = new PeerRequest(exc.getHash(), InventoryItem.INV_FILTERED_BLOCK);
             synchronized(Parameters.lock) {
                 Parameters.pendingRequests.add(request);
             }

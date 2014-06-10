@@ -200,7 +200,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
                     for (SendTransaction sendTx : sendList) {
                         int depth = Parameters.wallet.getTxDepth(sendTx.getTxHash());
                         if (depth == 0)
-                            invList.add(new InventoryItem(NetParams.INV_TX, sendTx.getTxHash()));
+                            invList.add(new InventoryItem(InventoryItem.INV_TX, sendTx.getTxHash()));
                     }
                     if (!invList.isEmpty()) {
                         Message invMsg = InventoryMessage.buildInventoryMessage(peer, invList);

@@ -856,7 +856,7 @@ public class NetworkHandler implements Runnable {
                 }
                 String originAddress = (originPeer!=null ? originPeer.getAddress().toString() : "local");
                 log.warn(String.format("Purging unavailable %s request initiated by %s\n  %s",
-                                       (request.getType()==NetParams.INV_BLOCK?"block":"transaction"),
+                                       (request.getType()==InventoryItem.INV_BLOCK?"block":"transaction"),
                                        originAddress, request.getHash().toString()));
                 continue;
             }

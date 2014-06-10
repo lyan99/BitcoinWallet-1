@@ -22,6 +22,7 @@ import org.ScripterRon.BitcoinCore.ECException;
 import org.ScripterRon.BitcoinCore.ECKey;
 import org.ScripterRon.BitcoinCore.EncryptedPrivateKey;
 import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.RejectMessage;
 import org.ScripterRon.BitcoinCore.SerializedBuffer;
 import org.ScripterRon.BitcoinCore.Sha256Hash;
 import org.ScripterRon.BitcoinCore.VarInt;
@@ -1068,7 +1069,7 @@ public class WalletLdb extends Wallet {
                     log.error(String.format("New chain head at height %d does not match checkpoint",
                                             header.getBlockHeight()));
                     throw new VerificationException("Checkpoint verification failed",
-                                                    NetParams.REJECT_CHECKPOINT, header.getHash());
+                                                    RejectMessage.REJECT_CHECKPOINT, header.getHash());
                 }
             }
         }

@@ -102,7 +102,7 @@ public class MessageHandler implements Runnable {
             String cmdName = (cmdOp!=null ? cmdOp.toString().toLowerCase() : "N/A");
             log.error(String.format("End-of-data while processing '%s' message from %s",
                                     cmdName, address.toString()), exc);
-            reasonCode = NetParams.REJECT_MALFORMED;
+            reasonCode = RejectMessage.REJECT_MALFORMED;
             if (cmdOp == MessageHeader.MessageCommand.VERSION)
                 peer.setDisconnect(true);
             if (peer.getVersion() >= 70002) {
@@ -137,7 +137,7 @@ public class MessageHandler implements Runnable {
         synchronized(Parameters.lock) {
             Parameters.completedMessages.add(msg);
             if (reasonCode != 0) {
-                if (reasonCode == NetParams.REJECT_MALFORMED || reasonCode == NetParams.REJECT_INVALID) {
+                if (reasonCode == RejectMessage.REJECT_MALFORMED || reasonCode == RejectMessage.REJECT_INVALID) {
                     int banScore = peer.getBanScore() + 5;
                     peer.setBanScore(banScore);
                     if (banScore >= Parameters.MAX_BAN_SCORE)

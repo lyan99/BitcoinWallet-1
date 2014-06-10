@@ -301,7 +301,7 @@ public class BitcoinPayment {
                 sendPayment(tx);
             Parameters.databaseHandler.processTransaction(tx);
             List<InventoryItem> invList = new ArrayList<>(1);
-            invList.add(new InventoryItem(NetParams.INV_TX, tx.getHash()));
+            invList.add(new InventoryItem(InventoryItem.INV_TX, tx.getHash()));
             Message invMsg = InventoryMessage.buildInventoryMessage(null, invList);
             Parameters.networkHandler.broadcastMessage(invMsg);
             //
