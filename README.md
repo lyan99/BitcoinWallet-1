@@ -25,7 +25,7 @@ Here are the steps for a manual build.  You will need to install Maven 3 and Jav
 
   - Create the executable: mvn clean package
   - [Optional] Create the documentation: mvn javadoc:javadoc
-  - [Optional] Copy target/BitcoinWallet-v.r.jar to wherever you want to store the executable.
+  - [Optional] Copy target/BitcoinWallet-v.r.jar and target/lib/* to wherever you want to store the executables.
   - Create a shortcut to start BitcoinWallet using java.exe for a command window or javaw.exe for GUI only. 
 
 
@@ -63,6 +63,6 @@ The following configuration options can be specified in BitcoinWallet.conf.  Thi
 		
 Sample Windows shortcut:	
 
-	javaw.exe -Xmx256m -Djava.library.path=\Bitcoin\BitcoinWallet -jar \Bitcoin\BitcoinWallet\BitcoinWallet.jar PROD
+	javaw.exe -Xmx256m -Djava.library.path=\Bitcoin\BitcoinWallet -jar \Bitcoin\BitcoinWallet\BitcoinWallet-2.0.jar PROD
 
 The leveldbjni.dll file was extracted from the jar file and placed in the \Bitcoin\BitcoinWallet directory.  Specifying java.library.path tells the JVM where to find the native resources.
