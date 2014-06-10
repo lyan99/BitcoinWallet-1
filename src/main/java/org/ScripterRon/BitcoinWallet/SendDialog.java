@@ -22,6 +22,7 @@ import org.ScripterRon.BitcoinCore.InventoryItem;
 import org.ScripterRon.BitcoinCore.InventoryMessage;
 import org.ScripterRon.BitcoinCore.Message;
 import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.ScriptException;
 import org.ScripterRon.BitcoinCore.SignedInput;
 import org.ScripterRon.BitcoinCore.Transaction;
 import org.ScripterRon.BitcoinCore.TransactionOutput;
@@ -271,7 +272,7 @@ public class SendDialog extends JDialog implements ActionListener {
             //
             try {
                 tx = new Transaction(inputs, outputs);
-            } catch (ECException | VerificationException exc) {
+            } catch (ECException | ScriptException | VerificationException exc) {
                 throw new WalletException("Unable to create transaction", exc);
             }
             //

@@ -22,6 +22,7 @@ import org.ScripterRon.BitcoinCore.InventoryItem;
 import org.ScripterRon.BitcoinCore.InventoryMessage;
 import org.ScripterRon.BitcoinCore.Message;
 import org.ScripterRon.BitcoinCore.NetParams;
+import org.ScripterRon.BitcoinCore.ScriptException;
 import org.ScripterRon.BitcoinCore.ScriptOpCodes;
 import org.ScripterRon.BitcoinCore.SignedInput;
 import org.ScripterRon.BitcoinCore.Transaction;
@@ -347,7 +348,7 @@ public class BitcoinPayment {
                 //
                 Parameters.wallet.storeAddress(address);
             }
-        } catch (ECException | VerificationException | WalletException exc) {
+        } catch (ECException | ScriptException | VerificationException | WalletException exc) {
             log.error("Unable to build transaction inputs", exc);
             throw new BitcoinPaymentException("Unable to build transaction inputs");
         }
