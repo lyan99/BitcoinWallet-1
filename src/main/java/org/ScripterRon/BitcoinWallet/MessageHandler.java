@@ -119,8 +119,6 @@ public class MessageHandler implements Runnable {
             Integer cmdLookup = MessageHeader.cmdMap.get(cmd);
             if (cmdLookup != null)
                 cmdOp = cmdLookup;
-            else
-                cmdOp = 0;
             msg.setCommand(cmdOp);
             log.debug(String.format("Processing '%s' message from %s", cmd, address.toString()));
             //
