@@ -136,13 +136,11 @@ public class MessageHandler implements Runnable {
         //
         synchronized(Parameters.lock) {
             Parameters.completedMessages.add(msg);
-            if (reasonCode != 0) {
-                if (reasonCode == RejectMessage.REJECT_MALFORMED || reasonCode == RejectMessage.REJECT_INVALID) {
-                    int banScore = peer.getBanScore() + 5;
-                    peer.setBanScore(banScore);
-                    if (banScore >= Parameters.MAX_BAN_SCORE)
-                        peer.setDisconnect(true);
-                }
+            if (reasonCode == RejectMessage.REJECT_MALFORMED || reasonCode == RejectMessage.REJECT_INVALID) {
+                int banScore = peer.getBanScore() + 5;
+                peer.setBanScore(banScore);
+                if (banScore >= Parameters.MAX_BAN_SCORE)
+                    peer.setDisconnect(true);
             }
         }
         Parameters.networkHandler.wakeup();
