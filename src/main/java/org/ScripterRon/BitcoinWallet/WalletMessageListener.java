@@ -176,8 +176,7 @@ public class WalletMessageListener extends AbstractMessageListener {
     /**
      * Process a peer address list
      *
-     * <p>This method is called when an 'addr' message is received.  The address list
-     * contains peers that have been active recently.</p>
+     * <p>This method is called when an 'addr' message is received.</p>
      *
      * @param       msg             Message
      * @param       addresses       Peer address list
