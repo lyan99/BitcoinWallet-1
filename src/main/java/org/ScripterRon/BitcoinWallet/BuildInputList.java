@@ -33,7 +33,8 @@ public class BuildInputList {
 
     /**
      * Build the signed input list for creating a new transaction.  The list will not
-     * include unconfirmed transactions, spent transactions or transactions in the safe.
+     * include pending transactions, spent transactions or transactions in the safe.
+     * A coinbase transaction must be mature before it can be spent.
      *
      * @return                          Signed input list
      * @throws      WalletException     Unable to get list of unspent outputs
@@ -52,7 +53,7 @@ public class BuildInputList {
             } else {
                 int depth = Parameters.wallet.getTxDepth(tx.getTxHash());
                 if ((tx.isCoinBase() && depth < Parameters.COINBASE_MATURITY) ||
-                                    (!tx.isCoinBase() && depth < Parameters.TRANSACTION_CONFIRMED)) {
+                                    (!tx.isCoinBase() && depth < 1)) {
                     it.remove();
                 }
             }
