@@ -12,7 +12,7 @@
         <slf4j.version>1.7.6</slf4j.version>
         <leveldbjni.version>1.8</leveldbjni.version>
         <protobuf.version>2.5.0</protobuf.version>
-        <BitcoinCore.version>2.0.0</BitcoinCore.version>
+        <BitcoinCore.version>2.0.1</BitcoinCore.version>
     </properties>
     <name>Java Bitcoin Wallet</name>
     <url>https://github.com/ScripterRon/BitcoinWallet</url>
