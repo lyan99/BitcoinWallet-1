@@ -60,10 +60,10 @@ The following command-line options can be specified using -Dname=value
 The following configuration options can be specified in BitcoinWallet.conf.  This file is optional and must be in the application directory in order to be used.	
 
   - connect=[address]:port		
-	Specifies the address and port of a peer node.  This statement can be repeated to define multiple nodes.  If this option is specified, connections will be created to only the listed addresses and DNS discovery will not be used.
-		
+	Specifies the address and port of a peer node.  This statement can be repeated to define multiple nodes.  If this option is specified, connections will be created to only the listed addresses and DNS discovery will not be used.     
+	
 Sample Windows shortcut:	
 
-	javaw.exe -Xmx256m -Djava.library.path=\Bitcoin\BitcoinWallet -jar \Bitcoin\BitcoinWallet\BitcoinWallet-2.0.jar PROD
+	javaw.exe -Xmx256m -Djava.library.path=\Bitcoin\BitcoinWallet -jar \Bitcoin\BitcoinWallet\BitcoinWallet-2.0.1.jar PROD
 
 The leveldbjni.dll file was extracted from the jar file and placed in the \Bitcoin\BitcoinWallet directory.  Specifying java.library.path tells the JVM where to find the native resources.
