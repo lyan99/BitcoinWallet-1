@@ -22,7 +22,6 @@ import org.ScripterRon.BitcoinCore.ECKey;
 import org.ScripterRon.BitcoinCore.InventoryItem;
 import org.ScripterRon.BitcoinCore.InventoryMessage;
 import org.ScripterRon.BitcoinCore.Message;
-import org.ScripterRon.BitcoinCore.NetParams;
 import org.ScripterRon.BitcoinCore.Peer;
 
 import java.io.BufferedReader;

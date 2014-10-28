@@ -81,7 +81,8 @@ public class TransactionPanel extends JPanel implements ActionListener {
      * @param       parentFrame     Parent frame
      */
     public TransactionPanel(JFrame parentFrame) {
-        super(new BorderLayout());
+        super();
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(true);
         setBackground(Color.WHITE);
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -95,35 +96,26 @@ public class TransactionPanel extends JPanel implements ActionListener {
         String frameSize = Main.properties.getProperty("window.main.size");
         if (frameSize != null) {
             int sep = frameSize.indexOf(',');
-            int frameWidth = Integer.parseInt(frameSize.substring(0, sep));
             int frameHeight = Integer.parseInt(frameSize.substring(sep+1));
-            table.setPreferredScrollableViewportSize(new Dimension(frameWidth-120, frameHeight-220));
+            table.setPreferredScrollableViewportSize(new Dimension(
+                        table.getPreferredScrollableViewportSize().width,
+                        (frameHeight/table.getRowHeight())*table.getRowHeight()));
         }
         //
         // Create the table scroll pane
         //
         scrollPane = new JScrollPane(table);
         //
-        // Create the table pane
-        //
-        JPanel tablePane = new JPanel();
-        tablePane.setBackground(Color.WHITE);
-        tablePane.add(Box.createGlue());
-        tablePane.add(scrollPane);
-        tablePane.add(Box.createGlue());
-        //
         // Create the status pane containing the Wallet balance, Safe balance and Chain block
         //
         JPanel statusPane = new JPanel();
-        statusPane.setOpaque(true);
+        statusPane.setLayout(new BoxLayout(statusPane, BoxLayout.X_AXIS));
         statusPane.setBackground(Color.WHITE);
-        walletLabel = new JLabel(getWalletText());
+        walletLabel = new JLabel(getWalletText(), SwingConstants.CENTER);
         statusPane.add(walletLabel);
-        statusPane.add(Box.createHorizontalStrut(50));
-        safeLabel = new JLabel(getSafeText());
+        safeLabel = new JLabel(getSafeText(), SwingConstants.CENTER);
         statusPane.add(safeLabel);
-        statusPane.add(Box.createHorizontalStrut(50));
-        blockLabel = new JLabel(getBlockText());
+        blockLabel = new JLabel(getBlockText(), SwingConstants.CENTER);
         statusPane.add(blockLabel);
         //
         // Create the buttons (Move to Safe, Move to Wallet, Delete Transaction)
@@ -135,9 +127,11 @@ public class TransactionPanel extends JPanel implements ActionListener {
         //
         // Set up the content pane
         //
-        add(statusPane, BorderLayout.NORTH);
-        add(tablePane, BorderLayout.CENTER);
-        add(buttonPane, BorderLayout.SOUTH);
+        add(statusPane);
+        add(Box.createVerticalStrut(15));
+        add(scrollPane);
+        add(Box.createVerticalStrut(15));
+        add(buttonPane);
     }
 
     /**
