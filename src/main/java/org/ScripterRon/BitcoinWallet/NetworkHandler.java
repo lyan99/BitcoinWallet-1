@@ -104,8 +104,8 @@ public class NetworkHandler implements Runnable {
     /** Static connections */
     private boolean staticConnections = false;
 
-    /** Get blocks message sent */
-    private boolean getBlocksSent = false;
+    /** Time when get blocks message sent */
+    private int getBlocksHeight = -1;
 
     /**
      * Creates the network handler
@@ -717,14 +717,14 @@ public class NetworkHandler implements Runnable {
                 //
                 // Send a 'getblocks' message if we are down-level and haven't sent one yet
                 //
-                if (!getBlocksSent && Parameters.wallet.getChainHeight() < peer.getHeight()) {
+                if (getBlocksHeight<0 && Parameters.wallet.getChainHeight()<peer.getHeight()) {
                     Message blocksMsg = buildGetBlocksMessage(peer);
                     synchronized(Parameters.lock) {
                         peer.getOutputList().add(blocksMsg);
                         key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
                     }
                     log.info(String.format("'getblocks' message sent to %s", address.toString()));
-                    getBlocksSent = true;
+                    getBlocksHeight = Parameters.wallet.getChainHeight();
                 }
                 //
                 // Notify listeners about the new connection
@@ -872,6 +872,20 @@ public class NetworkHandler implements Runnable {
                 peer.getOutputList().add(msg);
                 SelectionKey key = peer.getKey();
                 key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+            }
+            //
+            // Send a getblocks request if we are down-level and have reached a gap in the block chain
+            if (request.getType() == InventoryItem.INV_FILTERED_BLOCK &&
+                            Parameters.wallet.getChainHeight() < Parameters.networkChainHeight-10 &&
+                            getBlocksHeight < Parameters.wallet.getChainHeight()-50) {
+                Message blocksMsg = buildGetBlocksMessage(peer);
+                synchronized(Parameters.lock) {
+                    peer.getOutputList().add(blocksMsg);
+                    SelectionKey key = peer.getKey();
+                    key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+                }
+                log.info(String.format("'getblocks' message sent to %s", peer.getAddress()));
+                getBlocksHeight = Parameters.wallet.getChainHeight();
             }
         }
     }

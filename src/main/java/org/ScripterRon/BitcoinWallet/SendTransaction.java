@@ -42,7 +42,7 @@ public class SendTransaction extends WalletTransaction {
      * @param       normID              Normalized transactionID
      * @param       txHash              Transaction hash
      * @param       txTime              Transaction timestamp
-     * @param       blockHash           Chain block containing the transaction
+     * @param       blockHash           Chain block containing the transaction or null
      * @param       address             Send address
      * @param       value               Transaction value
      * @param       fee                 Transaction fee

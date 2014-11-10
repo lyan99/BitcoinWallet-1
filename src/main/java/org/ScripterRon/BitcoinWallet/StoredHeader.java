@@ -45,11 +45,14 @@ public class StoredHeader extends BlockHeader {
         super(header.getVersion(), header.getHash(), header.getPrevHash(), header.getBlockTime(),
                                 header.getTargetDifficulty(), header.getMerkleRoot(), header.getNonce(),
                                 header.getMatches());
+        onChain = false;
+        blockHeight = -1;
         chainWork = BigInteger.ONE;
     }
     /**
      * Create a StoredHeader from a database entry
      *
+     * @param       version             Block version
      * @param       blockHash           Block hash
      * @param       prevHash            Previous block hash
      * @param       blockTime           Time block was mined (seconds since Unix epoch)
@@ -60,10 +63,10 @@ public class StoredHeader extends BlockHeader {
      * @param       chainWork           Cumulative chain work
      * @param       matches             Matched transactions for this block
      */
-    public StoredHeader(Sha256Hash blockHash, Sha256Hash prevHash, long blockTime, long targetDifficulty,
-                                Sha256Hash merkleRoot, boolean onChain, int blockHeight, BigInteger chainWork,
-                                List<Sha256Hash> matches) {
-        super(0, blockHash, prevHash, blockTime, targetDifficulty, merkleRoot, 0, matches);
+    public StoredHeader(int version, Sha256Hash blockHash, Sha256Hash prevHash, long blockTime, long targetDifficulty,
+                        Sha256Hash merkleRoot, boolean onChain, int blockHeight, BigInteger chainWork,
+                        List<Sha256Hash> matches) {
+        super(version, blockHash, prevHash, blockTime, targetDifficulty, merkleRoot, 0, matches);
         this.onChain = onChain;
         this.blockHeight = blockHeight;
         this.chainWork = chainWork;

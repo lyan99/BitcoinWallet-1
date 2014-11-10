@@ -20,7 +20,6 @@ import org.ScripterRon.BitcoinCore.Address;
 import org.ScripterRon.BitcoinCore.BlockHeader;
 import org.ScripterRon.BitcoinCore.ECKey;
 import org.ScripterRon.BitcoinCore.InventoryItem;
-import org.ScripterRon.BitcoinCore.NetParams;
 import org.ScripterRon.BitcoinCore.OutPoint;
 import org.ScripterRon.BitcoinCore.ScriptOpCodes;
 import org.ScripterRon.BitcoinCore.Sha256Hash;
@@ -193,6 +192,8 @@ public class DatabaseHandler implements Runnable {
                             listener.rescanCompleted();
                         });
                     } else {
+                        if (rescanHeight%1000 == 0)
+                            log.debug(String.format("Block rescan at block %d", rescanHeight));
                         Sha256Hash nextHash = Parameters.wallet.getBlockHash(rescanHeight);
                         PeerRequest request = new PeerRequest(nextHash, InventoryItem.INV_FILTERED_BLOCK);
                         synchronized(Parameters.lock) {
@@ -218,10 +219,15 @@ public class DatabaseHandler implements Runnable {
             }
         } catch (BlockNotFoundException exc) {
             PeerRequest request = new PeerRequest(exc.getHash(), InventoryItem.INV_FILTERED_BLOCK);
+            boolean wakeup = false;
             synchronized(Parameters.lock) {
-                Parameters.pendingRequests.add(request);
+                if (!Parameters.pendingRequests.contains(request) && !Parameters.processedRequests.contains(request)) {
+                    Parameters.pendingRequests.add(request);
+                    wakeup = true;
+                }
             }
-            Parameters.networkHandler.wakeup();
+            if (wakeup)
+                Parameters.networkHandler.wakeup();
         } catch (VerificationException exc) {
             log.error(String.format("Checkpoint verification failed\n  %s", exc.getHash()), exc);
         } catch (WalletException exc) {
@@ -315,9 +321,8 @@ public class DatabaseHandler implements Runnable {
                 StoredHeader blockHeader = Parameters.wallet.getHeader(blockHash);
                 txTime = blockHeader.getBlockTime();
                 if (!blockHeader.isOnChain())
-                    blockHash = Sha256Hash.ZERO_HASH;
+                    blockHash = null;
             } else {
-                blockHash = Sha256Hash.ZERO_HASH;
                 txTime = System.currentTimeMillis()/1000;
             }
             //

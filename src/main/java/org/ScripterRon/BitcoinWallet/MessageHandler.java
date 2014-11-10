@@ -19,7 +19,6 @@ import static org.ScripterRon.BitcoinWallet.Main.log;
 import org.ScripterRon.BitcoinCore.MessageProcessor;
 import org.ScripterRon.BitcoinCore.Message;
 import org.ScripterRon.BitcoinCore.MessageHeader;
-import org.ScripterRon.BitcoinCore.NetParams;
 import org.ScripterRon.BitcoinCore.Peer;
 import org.ScripterRon.BitcoinCore.PeerAddress;
 import org.ScripterRon.BitcoinCore.RejectMessage;

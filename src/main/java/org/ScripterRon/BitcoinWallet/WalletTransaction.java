@@ -49,7 +49,7 @@ public class WalletTransaction {
      * @param       normID              Normalized transactionID
      * @param       txHash              Transaction hash
      * @param       txTime              Transaction timestamp
-     * @param       blockHash           Chain block containing the transaction
+     * @param       blockHash           Chain block containing the transaction or null
      * @param       address             Send address
      * @param       value               Transaction value
      */
@@ -93,7 +93,7 @@ public class WalletTransaction {
     /**
      * Returns the block hash
      *
-     * @return                          Block hash
+     * @return                          Block hash or null
      */
     public Sha256Hash getBlockHash() {
         return blockHash;

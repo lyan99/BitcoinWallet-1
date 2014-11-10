@@ -21,7 +21,6 @@ import org.ScripterRon.BitcoinCore.ECException;
 import org.ScripterRon.BitcoinCore.InventoryItem;
 import org.ScripterRon.BitcoinCore.InventoryMessage;
 import org.ScripterRon.BitcoinCore.Message;
-import org.ScripterRon.BitcoinCore.NetParams;
 import org.ScripterRon.BitcoinCore.ScriptException;
 import org.ScripterRon.BitcoinCore.SignedInput;
 import org.ScripterRon.BitcoinCore.Transaction;

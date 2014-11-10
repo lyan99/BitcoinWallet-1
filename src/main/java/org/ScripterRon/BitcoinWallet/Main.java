@@ -93,9 +93,6 @@ public class Main {
     /** Test network */
     private static boolean testNetwork = false;
 
-    /** Bitcoin URI */
-    private static String uriString;
-
     /** Main application window */
     public static MainWindow mainWindow;
 
@@ -232,9 +229,7 @@ public class Main {
             // Start our services on the GUI thread so we can display dialogs
             //
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            javax.swing.SwingUtilities.invokeLater(() -> {
-                startup();
-            });
+            javax.swing.SwingUtilities.invokeLater(() -> startup());
         } catch (Exception exc) {
             logException("Exception during program initialization", exc);
         }
@@ -256,7 +251,7 @@ public class Main {
             //
             // Create the wallet
             //
-            Parameters.wallet = new WalletLdb(dataPath);
+            Parameters.wallet = new WalletSql(dataPath);
             //
             // Get the address and key lists
             //
@@ -316,62 +311,6 @@ public class Main {
             thread = new Thread(threadGroup, messageHandler);
             thread.start();
             threads.add(thread);
-            //
-            // Process a payment request
-            //
-            if (uriString != null) {
-                log.info(String.format("Bitcoin URI: %s", uriString));
-                try {
-                    BitcoinURI uri = new BitcoinURI(uriString);
-                    BitcoinPayment request = new BitcoinPayment(uri);
-                    String network = request.getNetwork();
-                    if ((network.equals("main") && testNetwork) ||
-                                    (network.equals("test") && !testNetwork))
-                        throw new BitcoinPaymentException("Payment request received from the wrong network");
-                    StringBuilder builder = new StringBuilder(128);
-                    builder.append("Do you want to send ").append(satoshiToString(request.getAmount())).append(" BTC?");
-                    String merchant = request.getMerchantName();
-                    builder.append("\nTo: ").append(merchant.length()>0?merchant:"<Unknown>");
-                    String memo = request.getRequestMemo();
-                    if (memo.length() > 0)
-                        builder.append("\nFor: ").append(memo);
-                    int option = JOptionPane.showConfirmDialog(null, builder.toString(),
-                                            "Send Coin", JOptionPane.YES_NO_OPTION);
-                    if (option == JOptionPane.YES_OPTION) {
-                        request.sendCoins();
-                        memo = request.getAckMemo();
-                        builder = new StringBuilder(128);
-                        builder.append("Payment has been sent");
-                        if (memo.length() > 0)
-                            builder.append("\nReceipt: ").append(memo);
-                        JOptionPane.showMessageDialog(null, builder.toString(),
-                                                      "Coins Sent", JOptionPane.INFORMATION_MESSAGE);
-                    }
-                } catch (AddressFormatException exc) {
-                    log.error("Invalid payment address specified", exc);
-                    JOptionPane.showMessageDialog(null,
-                                                  "Invalid payment address specified\n"+exc.getMessage(),
-                                                  "Error", JOptionPane.ERROR_MESSAGE);
-                } catch (BitcoinURIException exc) {
-                    log.error("Invalid bitcoin URI specified", exc);
-                    JOptionPane.showMessageDialog(null,
-                                                  "Invalid bitcoin URI specified\n"+exc.getMessage(),
-                                                  "Error", JOptionPane.ERROR_MESSAGE);
-                } catch (BitcoinPaymentException exc) {
-                    log.error("Invalid bitcoin payment reuest", exc);
-                    JOptionPane.showMessageDialog(null,
-                                                  "Invalid bitcoin payment request\n"+exc.getMessage(),
-                                                  "Error", JOptionPane.ERROR_MESSAGE);
-                } catch (InsufficientFeeException exc) {
-                    JOptionPane.showMessageDialog(null, "There are not enough confirmed coins available",
-                                                  "Error", JOptionPane.ERROR_MESSAGE);
-                } catch (Exception exc) {
-                    log.error("Runtime exception while processing payment request", exc);
-                    JOptionPane.showMessageDialog(null,
-                                      "Runtime exception while processing payment request\n"+exc.getMessage(),
-                                      "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
             //
             // Start the GUI
             //
@@ -482,15 +421,8 @@ public class Main {
         } else if (!args[0].equalsIgnoreCase("PROD")) {
             throw new IllegalArgumentException("Valid options are PROD and TEST");
         }
-        //
-        // A bitcoin URI will be specified if we are processing a payment request
-        //
-        if (args.length > 1) {
-            if (args[1].startsWith("bitcoin:"))
-                uriString = args[1];
-            else
-                throw new IllegalArgumentException("Unrecognized command line parameter");
-        }
+        if (args.length > 1)
+            throw new IllegalArgumentException("Unrecognized command line parameter");
     }
 
     /**

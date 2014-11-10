@@ -3,16 +3,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.ScripterRon</groupId>
     <artifactId>BitcoinWallet</artifactId>
-    <version>2.0.1</version>
+    <version>3.0.0</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <slf4j.version>1.7.6</slf4j.version>
-        <leveldbjni.version>1.8</leveldbjni.version>
-        <protobuf.version>2.5.0</protobuf.version>
-        <BitcoinCore.version>2.0.1</BitcoinCore.version>
+        <h2.version>1.3.176</h2.version>
+        <BitcoinCore.version>2.0.2</BitcoinCore.version>
     </properties>
     <name>Java Bitcoin Wallet</name>
     <url>https://github.com/ScripterRon/BitcoinWallet</url>
@@ -145,15 +144,9 @@ sending coins as well as signing and verifying messages.
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.fusesource.leveldbjni</groupId>
-            <artifactId>leveldbjni-all</artifactId>
-            <version>${leveldbjni.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${protobuf.version}</version>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>

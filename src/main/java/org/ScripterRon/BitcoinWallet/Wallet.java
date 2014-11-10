@@ -32,7 +32,7 @@ import java.util.Map;
  * as the private keys have been exported and then imported into the new wallet.</p>
  */
 public abstract class Wallet {
-
+    
     /** Block chain checkpoints */
     protected static final Map<Integer, Sha256Hash> checkpoints = new HashMap<>();
     static {
@@ -40,14 +40,6 @@ public abstract class Wallet {
                         new Sha256Hash("000000001aeae195809d120b5d66a39c83eb48792e068f8ea1fea19d84a4278a"));
         checkpoints.put(75000,
                         new Sha256Hash("00000000000ace2adaabf1baf9dc0ec54434db11e9fd63c1819d8d77df40afda"));
-        checkpoints.put(91722,
-                        new Sha256Hash("00000000000271a2dc26e7667f8419f2e15416dc6955e5a6c6cdf3f2574dd08e"));
-        checkpoints.put(91812,
-                        new Sha256Hash("00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f"));
-        checkpoints.put(91842,
-                        new Sha256Hash("00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec"));
-        checkpoints.put(91880,
-                        new Sha256Hash("00000000000743f190a18c5577a3c2d2a1f610ae9601ac046a38084ccb7cd721"));
         checkpoints.put(100000,
                         new Sha256Hash("000000000003ba27aa200b1cecaad478d2b00432346c3f1f3986da1afd33e506"));
         checkpoints.put(125000,
@@ -64,6 +56,10 @@ public abstract class Wallet {
                         new Sha256Hash("000000000000003887df1f29024b06fc2200b55f8af8f35453d7be294df2d214"));
         checkpoints.put(275000,
                         new Sha256Hash("00000000000000044750d80a0d3f3e307e54e8802397ae840d91adc28068f5bc"));
+        checkpoints.put(300000,
+                        new Sha256Hash("000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254"));
+        checkpoints.put(325000,
+                        new Sha256Hash("00000000000000000409695bce21828b31a7143fa35fcab64670dd337a71425d"));
     }
 
     /** Database update lock */
@@ -77,12 +73,17 @@ public abstract class Wallet {
 
     /** Current chain work */
     protected BigInteger chainWork;
+    
+    /** Application data path */
+    protected final String dataPath;
 
     /**
      * Creates a Wallet
+     * @param       dataPath            Application data path
      * @throws      WalletException     Unable to initialize the database
      */
-    public Wallet() throws WalletException {
+    public Wallet(String dataPath) throws WalletException {
+        this.dataPath = dataPath;
     }
 
     /**
@@ -305,7 +306,7 @@ public abstract class Wallet {
      * @throws      WalletException     Unable to store the transaction
      */
     public abstract void storeSendTx(SendTransaction sendTx) throws WalletException;
-
+    
     /**
      * Updates the delete status for a send transaction
      *
@@ -319,7 +320,7 @@ public abstract class Wallet {
      * Returns the requested send transaction
      *
      * @param       txHash              Send transaction hash
-     * @return                          Transaction or null if not found
+     * @return                          Transaction or null if not found or is deleted
      * @throws      WalletException     Unable to get the transaction from the database
      */
     public abstract SendTransaction getSendTx(Sha256Hash txHash) throws WalletException;
@@ -347,7 +348,9 @@ public abstract class Wallet {
     public abstract int getTxDepth(Sha256Hash txHash) throws WalletException;
 
     /**
-     * Deletes all transactions later than the rescan time
+     * Deletes all transactions later than the rescan time.  Transactions that are not
+     * in a block will not be deleted.
+     * 
      * @param       rescanTime              Rescan time in seconds
      * @throws      WalletException         Unable to delete transactions
      */

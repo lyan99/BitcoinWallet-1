@@ -3,17 +3,13 @@ BitcoinWallet
 
 BitcoinWallet is a Simple Payment Verification (SPV) Bitcoin wallet written in Java.  It allows you to send and receive coins using Pay-To-Pubkey-Hash payments.  It has a 'wallet' and a 'safe'.  The safe contains coins that are not to be spent until they are moved to the wallet.  It uses a single change address because I'm not worried about being anonymous on the network and don't want to take a chance on losing coins because I forgot to back up the wallet after making a transaction.  Bloom filters are used to reduce the amount of data sent to the wallet from the peer nodes.
 
-Support is provided for the payment protocols defined in BIP0021 and BIP0070.  For a BIP0021 payment request, the transaction is created and broadcast after being confirmed by the user.  For a BIP0070 payment request, the transaction is created and returned to the merchant after being confirmed by the user.  A BIP0070 payment request that doesn't supply a payment URL will be broadcast immediately.  Otherwise, the transaction will not be broadcast until the acknowledgement is received from the merchant.  This ensures that the merchant receives the payment and no coins are lost if an error occurs during the payment processing.  BitcoinWallet must be registered to handle the bitcoin URI and must not be running when the payment request is made since the web browser will launch the application when it receives the payment request.
-
 You can use the production network (PROD) or the regression test network (TEST).  The regression test network is useful because bitcoind will immediately generate a specified number of blocks.  To use the regression test network, start bitcoind with the -regtest option.  You can then generate blocks using bitcoin-cli to issue 'setgenerate true n' where 'n' is the number of blocks to generate.  Block generation will stop after the requested number of blocks have been generated.  Note that the genesis block, address formats and magic numbers are different between the two networks.  BitcoinWallet will create files related to the TEST network in the TestNet subdirectory of the application data directory.
 
-LevelDB is used for the wallet database and the files will be stored in the LevelDB subdirectory of the application data directory.  The LevelDB support is provided by leveldbjni (1.8 or later).  leveldbjni provides a native interface to the LevelDB routines.  The native LevelDB library is included in the leveldbjni.jar file and is extracted when you run the program.  On Windows, this causes a new temporary file to be created each time the program is run.  To get around this, extract the Windows version of leveldbjni.dll from the leveldbjni.jar and place it in a directory in the executable path (specified by the PATH environment variable).  Alternately, you can define the path to leveldbjni.dll by specifying '-Djava.library.path=directory-path' on the command line used to start BitcoinWallet.
+H2 is used for the wallet database and the files will be stored in the Database subdirectory of the application data directory.
 
 BouncyCastle (1.51 or later) is used for the elliptic curve functions.  Version 1.51 provides a custom SecP256K1 curve which significantly improves ECDSA performance.  Earlier versions of BouncyCastle do not provide this support and will not work with BitcoinWallet.
 
 Simple Logging Facade (1.7.5 or later) is used for console and file logging.  I'm using the JDK logger implementation which is controlled by the logging.properties file located in the application data directory.  If no logging.properties file is found, the system logging.properties file will be used (which defaults to logging to the console only).
-
-Google Protocol Buffers are used for the BIP0070 payment protocol support.  You can learn more about protocol buffers at https://developers.google.com/protocol-buffers/.
 
 
 Build
@@ -64,6 +60,4 @@ The following configuration options can be specified in BitcoinWallet.conf.  Thi
 	
 Sample Windows shortcut:	
 
-	javaw.exe -Xmx256m -Djava.library.path=\Bitcoin\BitcoinWallet -jar \Bitcoin\BitcoinWallet\BitcoinWallet-2.0.1.jar PROD
-
-The leveldbjni.dll file was extracted from the jar file and placed in the \Bitcoin\BitcoinWallet directory.  Specifying java.library.path tells the JVM where to find the native resources.
+	javaw.exe -Xmx256m -jar \Bitcoin\BitcoinWallet\BitcoinWallet-3.0.0.jar PROD

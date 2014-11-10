@@ -90,7 +90,7 @@ public class PeerRequest {
     /**
      * Returns the inventory type
      *
-     * @return      Inventory type (INV_BLOCK or INV_TX)
+     * @return      Inventory type (INV_FILTERED_BLOCK or INV_TX)
      */
     public int getType() {
         return type;

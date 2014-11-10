@@ -51,7 +51,7 @@ public class ReceiveTransaction extends WalletTransaction {
      * @param       txHash              Transaction output hash
      * @param       txIndex             Transaction output index
      * @param       txTime              Transaction timestamp
-     * @param       blockHash           Chain block containing the transaction
+     * @param       blockHash           Chain block containing the transaction or null
      * @param       address             Receiving address
      * @param       value               Transaction value
      * @param       scriptBytes         Transaction output script bytes
@@ -72,7 +72,7 @@ public class ReceiveTransaction extends WalletTransaction {
      * @param       txHash              Transaction output hash
      * @param       txIndex             Transaction output index
      * @param       txTime              Transaction timestamp
-     * @param       blockHash           Chain block containing the transaction
+     * @param       blockHash           Chain block containing the transaction or null
      * @param       address             Receiving address
      * @param       value               Transaction value
      * @param       scriptBytes         Transaction output script bytes
