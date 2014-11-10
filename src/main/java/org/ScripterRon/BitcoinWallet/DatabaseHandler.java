@@ -201,10 +201,9 @@ public class DatabaseHandler implements Runnable {
                         }
                         Parameters.networkHandler.wakeup();
                     }
-                } else if (Parameters.networkChainHeight > Parameters.wallet.getChainHeight()) {
+                } else {
                     //
-                    // We are down-level, so see if this block is on the chain.  If it isn't,
-                    // update the chain.
+                    // See if this block is on the chain.  If it isn't, update the chain.
                     //
                     StoredHeader chkHeader = Parameters.wallet.getHeader(blockHash);
                     if (!chkHeader.isOnChain()) {

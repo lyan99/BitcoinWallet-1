@@ -15,8 +15,6 @@
  */
 package org.ScripterRon.BitcoinWallet;
 
-import org.ScripterRon.BitcoinCore.BlockHeader;
-
 /**
  * A wallet listener receives notifications when a new block or transaction
  * is received.
