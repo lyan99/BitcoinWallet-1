@@ -112,6 +112,9 @@ public class Parameters {
 
     /** Network chain height */
     public static int networkChainHeight;
+    
+    /** Loading block chain */
+    public static boolean loadingChain = false;
 
     /** Wallet passphrase */
     public static String passPhrase;

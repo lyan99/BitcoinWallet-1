@@ -123,6 +123,12 @@ public class DatabaseHandler implements Runnable {
                 Object obj = Parameters.databaseQueue.take();
                 if (obj instanceof BlockHeader) {
                     processBlock(new StoredHeader((BlockHeader)obj));
+                    if (Parameters.databaseQueue.isEmpty()) {
+                        if (Parameters.wallet.getChainHeight() >= Parameters.networkChainHeight)
+                            Parameters.loadingChain = false;
+                        else
+                            Parameters.networkHandler.getBlocks();
+                    }
                 } else if (obj instanceof Transaction) {
                     processTransaction((Transaction)obj);
                 }
@@ -155,9 +161,11 @@ public class DatabaseHandler implements Runnable {
             //
             synchronized(Parameters.lock) {
                 List<Sha256Hash> matches = blockHeader.getMatches();
-                for (Sha256Hash txHash : matches) {
-                    if (Parameters.wallet.isNewTransaction(txHash))
-                        txMap.put(txHash, blockHash);
+                if (matches != null) {
+                    for (Sha256Hash txHash : matches) {
+                        if (Parameters.wallet.isNewTransaction(txHash))
+                            txMap.put(txHash, blockHash);
+                    }
                 }
             }
             //
@@ -272,6 +280,9 @@ public class DatabaseHandler implements Runnable {
                     listener.addChainBlock(chainHeader);
             }
             Parameters.networkChainHeight = Math.max(Parameters.networkChainHeight, blockHeader.getBlockHeight());
+        } else {
+            log.debug(String.format("Block not added to chain: New chain work %d, Current chain work %d\n  Block %s",
+                                    blockHeader.getChainWork(), Parameters.wallet.getChainWork(), blockHeader.getHash()));
         }
     }
 

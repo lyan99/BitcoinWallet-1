@@ -1276,7 +1276,7 @@ public class WalletSql extends Wallet {
             while (!onChain) {
                 StoredHeader header = getHeader(blockHash);
                 if (header == null) {
-                    log.debug(String.format("Chain block is not available\n  Block %s", blockHash.toString()));
+                    log.debug(String.format("Chain block is not available\n  Block %s", blockHash));
                     throw new BlockNotFoundException("Unable to resolve block chain", blockHash);
                 }
                 chainList.add(0, header);
@@ -1335,7 +1335,9 @@ public class WalletSql extends Wallet {
                             + "WHERE tx_hash_index=? AND tx_hash=?");
                     PreparedStatement s3 = conn.prepareStatement("UPDATE Sent SET block_hash=? "
                             + "WHERE tx_hash_index=? AND tx_hash=?");
-                    PreparedStatement s4 = conn.prepareStatement("UPDATE Headers SET block_height=? "
+                    PreparedStatement s4 = conn.prepareStatement("UPDATE Headers SET block_height=-1 "
+                            + "WHERE block_hash_index=? AND block_hash=?");
+                    PreparedStatement s5 = conn.prepareStatement("UPDATE Headers SET block_height=?,chain_work=? "
                             + "WHERE block_hash_index=? AND block_hash=?")) {
                 conn.setAutoCommit(false);
                 //
@@ -1383,9 +1385,8 @@ public class WalletSql extends Wallet {
                         //
                         // Remove the block from the chain
                         //
-                        s4.setInt(1, -1);
-                        s4.setLong(2, getHashIndex(blockHash));
-                        s4.setBytes(3, blockHash.getBytes());
+                        s4.setLong(1, getHashIndex(blockHash));
+                        s4.setBytes(2, blockHash.getBytes());
                         s4.executeUpdate();
                         log.info(String.format("Block removed from block chain\n  Block %s", blockHash));
                         //
@@ -1422,12 +1423,13 @@ public class WalletSql extends Wallet {
                     //
                     // Update the block status
                     //
-                    s4.setInt(1, blockHeight);
-                    s4.setLong(2, getHashIndex(blockHash));
-                    s4.setBytes(3, blockHash.getBytes());
-                    s4.executeUpdate();
-                    log.info(String.format("Block added to block chain at height %d\n  Block %s",
-                                           blockHeight, blockHash));
+                    s5.setInt(1, blockHeight);
+                    s5.setBytes(2, header.getChainWork().toByteArray());
+                    s5.setLong(3, getHashIndex(blockHash));
+                    s5.setBytes(4, blockHash.getBytes());
+                    s5.executeUpdate();
+                    log.info(String.format("Block added to block chain at height %d, Difficulty %d\n  Block %s",
+                                           blockHeight, header.getChainWork(), blockHash));
                 }
                 //
                 // Commit the changes

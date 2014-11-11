@@ -20,6 +20,7 @@ import org.ScripterRon.BitcoinCore.FilterLoadMessage;
 import org.ScripterRon.BitcoinCore.GetAddressMessage;
 import org.ScripterRon.BitcoinCore.GetBlocksMessage;
 import org.ScripterRon.BitcoinCore.GetDataMessage;
+import org.ScripterRon.BitcoinCore.GetHeadersMessage;
 import org.ScripterRon.BitcoinCore.InventoryItem;
 import org.ScripterRon.BitcoinCore.Message;
 import org.ScripterRon.BitcoinCore.MessageHeader;
@@ -376,6 +377,65 @@ public class NetworkHandler implements Runnable {
         }
         wakeup();
     }
+    
+    /**
+     * Continue block chain download using a random peer.  This method is called by the database handler
+     * when its input queue is empty and we are still down-level.
+     */
+    public void getBlocks() {
+        //
+        // Always issue a 'getheaders' message if this is the initial download since all
+        // of the requested headers are delivered in a single 'headers' message.  Otherwise,
+        // issue a 'getblocks' message if we haven't issued one recently.
+        //
+        if (!Parameters.loadingChain && Parameters.wallet.getChainHeight() < getBlocksHeight+50)
+            return;
+        //
+        // Pick a connected peer
+        //
+        Peer peer;
+        boolean peerFound = false;
+        synchronized(Parameters.lock) {
+            int index = (int)((double)connections.size() * Math.random());
+            peer = connections.get(index);
+            if (peer.getVersionCount()>2 && peer.getHeight()>Parameters.wallet.getChainHeight()) {
+                peerFound = true;
+            } else {
+                for (int i=index+1; i<connections.size(); i++) {
+                    peer = connections.get(i);
+                    if (peer.getVersionCount()>2 && peer.getHeight()>Parameters.wallet.getChainHeight()) {
+                        peerFound = true;
+                        break;
+                    }
+                }
+            }
+            if (!peerFound) {
+                for (int i=0; i<index; i++) {
+                    peer = connections.get(i);
+                    if (peer.getVersionCount()>2 && peer.getHeight()>Parameters.wallet.getChainHeight()) {
+                        peerFound = true;
+                        break;
+                    }
+                }
+            }
+        }
+        //
+        // Send a 'getblocks' or 'getheaders' message to the selected peer
+        //
+        if (peerFound) {
+            Message blocksMsg = buildGetBlocksMessage(peer);
+            synchronized(Parameters.lock) {
+                peer.getOutputList().add(blocksMsg);
+                SelectionKey key = peer.getKey();
+                key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+            }
+            log.info(String.format("'%s' message sent to %s", 
+                    blocksMsg.getCommand()==MessageHeader.MessageCommand.GETBLOCKS?"getblocks":"getheaders",
+                    peer.getAddress()));
+            getBlocksHeight = Parameters.wallet.getChainHeight();
+        }
+        wakeup();
+    }
 
     /**
      * Creates a new outbound connection
@@ -388,7 +448,7 @@ public class NetworkHandler implements Runnable {
      */
     private boolean connectOutbound() {
         //
-        // Pick a random peer
+        // Pick a random peer from the address list
         //
         PeerAddress address;
         boolean addressFound = true;
@@ -715,15 +775,19 @@ public class NetworkHandler implements Runnable {
                 }
                 log.info(String.format("'filterload' message sent to %s", address.toString()));
                 //
-                // Send a 'getblocks' message if we are down-level and haven't sent one yet
+                // Send a 'getblocks' or 'getheaders' message if we are down-level and haven't sent one yet
                 //
                 if (getBlocksHeight<0 && Parameters.wallet.getChainHeight()<peer.getHeight()) {
+                    if (Parameters.wallet.getChainHeight() == 0)
+                        Parameters.loadingChain = true;
                     Message blocksMsg = buildGetBlocksMessage(peer);
+                    log.info(String.format("'%s' message sent to %s", 
+                            blocksMsg.getCommand()==MessageHeader.MessageCommand.GETBLOCKS?"getblocks":"getheaders",
+                            address));
                     synchronized(Parameters.lock) {
                         peer.getOutputList().add(blocksMsg);
                         key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
                     }
-                    log.info(String.format("'getblocks' message sent to %s", address.toString()));
                     getBlocksHeight = Parameters.wallet.getChainHeight();
                 }
                 //
@@ -735,7 +799,7 @@ public class NetworkHandler implements Runnable {
     }
 
     /**
-     * Build the 'getblocks' message
+     * Build the 'getblocks' or 'getheaders' message
      *
      * @param       peer            The destination peer
      * @return                      Message to sent to peer
@@ -773,7 +837,9 @@ public class NetworkHandler implements Runnable {
             //
             invList.add(Parameters.wallet.getChainHead());
         }
-        return GetBlocksMessage.buildGetBlocksMessage(peer, invList, Sha256Hash.ZERO_HASH);
+        return Parameters.loadingChain ? 
+                GetHeadersMessage.buildGetHeadersMessage(peer, invList, Sha256Hash.ZERO_HASH) :
+                GetBlocksMessage.buildGetBlocksMessage(peer, invList, Sha256Hash.ZERO_HASH);
     }
 
     /**
@@ -872,20 +938,6 @@ public class NetworkHandler implements Runnable {
                 peer.getOutputList().add(msg);
                 SelectionKey key = peer.getKey();
                 key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
-            }
-            //
-            // Send a getblocks request if we are down-level and have reached a gap in the block chain
-            if (request.getType() == InventoryItem.INV_FILTERED_BLOCK &&
-                            Parameters.wallet.getChainHeight() < Parameters.networkChainHeight-10 &&
-                            getBlocksHeight < Parameters.wallet.getChainHeight()-50) {
-                Message blocksMsg = buildGetBlocksMessage(peer);
-                synchronized(Parameters.lock) {
-                    peer.getOutputList().add(blocksMsg);
-                    SelectionKey key = peer.getKey();
-                    key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
-                }
-                log.info(String.format("'getblocks' message sent to %s", peer.getAddress()));
-                getBlocksHeight = Parameters.wallet.getChainHeight();
             }
         }
     }
