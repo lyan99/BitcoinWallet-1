@@ -678,7 +678,7 @@ public class WalletSql extends Wallet {
             while (r.next()) {
                 byte[] pubKey = r.getBytes(1);
                 EncryptedPrivateKey encPrivKey = new EncryptedPrivateKey(r.getBytes(2));
-                ECKey key = new ECKey(null, encPrivKey.getPrivKey(Parameters.passPhrase), (pubKey.length==33));
+                ECKey key = new ECKey(encPrivKey.getPrivKey(Parameters.passPhrase), (pubKey.length==33));
                 if (!Arrays.equals(key.getPubKey(), pubKey))
                     throw new KeyException("Private key does not match public key");
                 key.setCreationTime(r.getLong(3));
