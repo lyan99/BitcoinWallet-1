@@ -91,7 +91,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         // Size the window using the saved size from the last time
         // the program was run
         //
-        int frameWidth = 640;
+        int frameWidth = 840;
         int frameHeight = 580;
         propValue = Main.properties.getProperty("window.main.size");
         if (propValue != null) {
