@@ -377,7 +377,7 @@ public class NetworkHandler implements Runnable {
         }
         wakeup();
     }
-    
+
     /**
      * Continue block chain download using a random peer.  This method is called by the database handler
      * when its input queue is empty and we are still down-level.
@@ -429,7 +429,7 @@ public class NetworkHandler implements Runnable {
                 SelectionKey key = peer.getKey();
                 key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
             }
-            log.info(String.format("'%s' message sent to %s", 
+            log.info(String.format("'%s' message sent to %s",
                     blocksMsg.getCommand()==MessageHeader.MessageCommand.GETBLOCKS?"getblocks":"getheaders",
                     peer.getAddress()));
             getBlocksHeight = Parameters.wallet.getChainHeight();
@@ -593,6 +593,7 @@ public class NetworkHandler implements Runnable {
                         break;
                     }
                     if (length > 0) {
+                        log.debug(String.format("Received '%s' message", new String(hdrBytes, 4, 12).replace((char)0, ' ')));
                         byte[] msgBytes = new byte[MessageHeader.HEADER_LENGTH+(int)length];
                         System.arraycopy(hdrBytes, 0, msgBytes, 0, MessageHeader.HEADER_LENGTH);
                         buffer = ByteBuffer.wrap(msgBytes);
@@ -781,7 +782,7 @@ public class NetworkHandler implements Runnable {
                     if (Parameters.wallet.getChainHeight() == 0)
                         Parameters.loadingChain = true;
                     Message blocksMsg = buildGetBlocksMessage(peer);
-                    log.info(String.format("'%s' message sent to %s", 
+                    log.info(String.format("'%s' message sent to %s",
                             blocksMsg.getCommand()==MessageHeader.MessageCommand.GETBLOCKS?"getblocks":"getheaders",
                             address));
                     synchronized(Parameters.lock) {
@@ -830,6 +831,8 @@ public class NetworkHandler implements Runnable {
                     pos--;
                 }
             }
+            if (invList.isEmpty())
+                invList.add(Parameters.wallet.getChainHead());
         } catch (WalletException exc) {
             //
             // We can't query the database, so just locate the chain head and hope we
@@ -837,7 +840,7 @@ public class NetworkHandler implements Runnable {
             //
             invList.add(Parameters.wallet.getChainHead());
         }
-        return Parameters.loadingChain ? 
+        return Parameters.loadingChain ?
                 GetHeadersMessage.buildGetHeadersMessage(peer, invList, Sha256Hash.ZERO_HASH) :
                 GetBlocksMessage.buildGetBlocksMessage(peer, invList, Sha256Hash.ZERO_HASH);
     }
