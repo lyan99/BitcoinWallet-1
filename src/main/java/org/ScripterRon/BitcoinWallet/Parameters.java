@@ -60,7 +60,7 @@ public class Parameters {
     public static final int COINBASE_MATURITY = 120;
 
     /** Transaction maturity */
-    public static final int TRANSACTION_CONFIRMED = 6;
+    public static final int TRANSACTION_CONFIRMED = 2;
 
     /** Short-term lock object */
     public static final Object lock = new Object();
@@ -112,7 +112,7 @@ public class Parameters {
 
     /** Network chain height */
     public static int networkChainHeight;
-    
+
     /** Loading block chain */
     public static boolean loadingChain = false;
 
