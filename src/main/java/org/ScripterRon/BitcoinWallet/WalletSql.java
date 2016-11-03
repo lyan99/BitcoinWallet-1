@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Ronald Hoffman.
+ * Copyright 2014-2016 Ronald Hoffman.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1005,7 +1005,7 @@ public class WalletSql extends Wallet {
     @Override
     public List<ReceiveTransaction> getReceiveTxList() throws WalletException {
         List<ReceiveTransaction> txList = new LinkedList<>();
-        Map<TransactionID, ReceiveTransaction> txMap = new HashMap();
+        Map<TransactionID, ReceiveTransaction> txMap = new HashMap<>();
         Connection conn = getConnection();
         ResultSet r;
         try (PreparedStatement s = conn.prepareStatement("SELECT tx_hash,tx_index,norm_hash,timestamp,"
@@ -1147,7 +1147,7 @@ public class WalletSql extends Wallet {
     @Override
     public List<SendTransaction> getSendTxList() throws WalletException {
         List<SendTransaction> txList = new LinkedList<>();
-        Map<Sha256Hash, SendTransaction> txMap = new HashMap();
+        Map<Sha256Hash, SendTransaction> txMap = new HashMap<>();
         Connection conn = getConnection();
         ResultSet r;
         try (PreparedStatement s = conn.prepareStatement("SELECT tx_hash,norm_hash,timestamp,"

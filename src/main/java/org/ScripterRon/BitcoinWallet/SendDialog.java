@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Ronald W Hoffman
+ * Copyright 2013-2016 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,24 @@ import org.ScripterRon.BitcoinCore.VerificationException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.WindowConstants;
+
+import java.awt.Dialog;
+import java.awt.Dimension;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  * SendDialog will create a new transaction to send coins to a specified recipient.  Transactions in the safe and
@@ -95,7 +110,11 @@ public class SendDialog extends JDialog implements ActionListener {
         //
         // Create the fee field
         //
-        feeField = new JTextField("0.0001", 10);
+        String feeString = Main.properties.getProperty("send.fee");
+        if (feeString == null) {
+            feeString = "0.0001";
+        }
+        feeField = new JTextField(feeString, 10);
         JPanel feePane = new JPanel();
         feePane.add(new JLabel("Fee  ", JLabel.RIGHT));
         feePane.add(feeField);
@@ -156,8 +175,9 @@ public class SendDialog extends JDialog implements ActionListener {
                         String confirmText = String.format("Do you want to send %s BTC?",
                                                            Main.satoshiToString(sendAmount));
                         if (JOptionPane.showConfirmDialog(this, confirmText, "Send Coins", JOptionPane.YES_NO_OPTION,
-                                                          JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION)
+                                                          JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
                             sendCoins();
+                        }
                     }
                     break;
                 case "done":
@@ -230,6 +250,7 @@ public class SendDialog extends JDialog implements ActionListener {
                                                               "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
+        Main.properties.setProperty("send.fee", feeString);
         return true;
     }
 
