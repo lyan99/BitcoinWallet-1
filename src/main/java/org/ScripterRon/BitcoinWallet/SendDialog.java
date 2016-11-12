@@ -291,7 +291,7 @@ public class SendDialog extends JDialog implements ActionListener {
             // Create the new transaction using the supplied inputs and outputs
             //
             try {
-                tx = new Transaction(inputs, outputs);
+                tx = new Transaction(inputs, outputs, Parameters.wallet.getChainHeight());
             } catch (ECException | ScriptException | VerificationException exc) {
                 throw new WalletException("Unable to create transaction", exc);
             }

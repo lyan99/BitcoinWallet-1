@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Ronald W Hoffman
+ * Copyright 2013-2016 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import org.ScripterRon.BitcoinCore.Script;
 
 /**
  * The database handler processes blocks and transactions and updates the wallet database.
@@ -196,9 +197,7 @@ public class DatabaseHandler implements Runnable {
                     if (rescanHeight > Parameters.wallet.getChainHeight()) {
                         rescanHeight = 0;
                         log.info("Block rescan completed");
-                        listeners.stream().forEach((listener) -> {
-                            listener.rescanCompleted();
-                        });
+                        listeners.forEach((listener) -> listener.rescanCompleted());
                     } else {
                         if (rescanHeight%1000 == 0)
                             log.debug(String.format("Block rescan at block %d", rescanHeight));
@@ -340,9 +339,8 @@ public class DatabaseHandler implements Runnable {
             //
             if (Parameters.wallet.isNewTransaction(txHash)) {
                 //
-                // See if the transaction is sending us coins by checking the outputs.  We
-                // only care about PAY_TO_PUBKEY_HASH where the address is one of our
-                // addresses.  We need to check each output since we could be sending coins
+                // See if the transaction is sending us coins by checking the outputs.
+                // We need to check each output since we could be sending coins
                 // to ourself, in which case two outputs will be of interest.
                 //
                 List<TransactionOutput> txOutputs = tx.getOutputs();
@@ -385,7 +383,7 @@ public class DatabaseHandler implements Runnable {
                 }
                 //
                 // Create a database entry for this transaction if it spent any of our coins.
-                // We will use non-change output as the destination and set the timestamp back
+                // We will use the non-change output as the destination and set the timestamp back
                 // by 15 seconds so that the send transaction will be sorted before the receive
                 // transaction in case we are sending the coins to ourself.
                 //
@@ -408,7 +406,7 @@ public class DatabaseHandler implements Runnable {
                 // Notify any listeners that one or more transactions have been updated
                 //
                 if (txUpdated) {
-                    listeners.stream().forEach((listener) -> {
+                    listeners.forEach((listener) -> {
                         listener.txUpdated();
                     });
                 }
@@ -431,38 +429,49 @@ public class DatabaseHandler implements Runnable {
      */
     private Object checkAddress(TransactionOutput txOutput, boolean ourAddress) {
         Object result = null;
-        //
-        // See if this is PAY_TO_PUBKEY_HASH
-        //
         byte[] scriptBytes = txOutput.getScriptBytes();
-        if (scriptBytes.length == 25 && scriptBytes[0] == (byte)ScriptOpCodes.OP_DUP &&
-                                        scriptBytes[1] == (byte)ScriptOpCodes.OP_HASH160 &&
-                                        scriptBytes[2] == 20 &&
-                                        scriptBytes[23] == (byte)ScriptOpCodes.OP_EQUALVERIFY &&
-                                        scriptBytes[24] == (byte)ScriptOpCodes.OP_CHECKSIG) {
+        int paymentType = Script.getPaymentType(scriptBytes);
+        if (paymentType == ScriptOpCodes.PAY_TO_PUBKEY_HASH) {
             //
-            // See if it is one of our addresses
+            // Check PAY_TO_PUBKEY_HASH output script
             //
-            byte[] scriptAddress = Arrays.copyOfRange(scriptBytes, 3, 23);
+            byte[] pubKeyHash = Arrays.copyOfRange(scriptBytes, 3, 23);
             synchronized(Parameters.lock) {
                 for (ECKey chkKey : Parameters.keys) {
-                    if (Arrays.equals(chkKey.getPubKeyHash(), scriptAddress)) {
+                    if (Arrays.equals(chkKey.getPubKeyHash(), pubKeyHash)) {
                         result = chkKey;
                         break;
                     }
                 }
             }
-            //
-            // Return the key (if any) if we were looking for one of our addresses.  Otherwise,
-            // return the address if we didn't find a key (meaning it is not one of our addresses)
-            //
             if (!ourAddress) {
                 if (result == null)
-                    result = new Address(scriptAddress);
+                    result = new Address(Address.AddressType.P2PKH, pubKeyHash);
                 else if (((ECKey)result).isChange())
                     result = null;
                 else
-                    result = ((ECKey)result).toAddress();
+                    result = new Address(Address.AddressType.P2PKH, pubKeyHash);
+            }
+        } else if (paymentType == ScriptOpCodes.PAY_TO_SCRIPT_HASH) {
+            //
+            // Check PAY_TO_SCRIPT_HASH output script
+            //
+            byte[] scriptHash = Arrays.copyOfRange(scriptBytes, 2, 22);
+            synchronized(Parameters.lock) {
+                for (ECKey chkKey : Parameters.keys) {
+                    if (Arrays.equals(chkKey.getScriptHash(), scriptHash)) {
+                        result = chkKey;
+                        break;
+                    }
+                }
+            }
+            if (!ourAddress) {
+                if (result == null)
+                    result = new Address(Address.AddressType.P2SH, scriptHash);
+                else if (((ECKey)result).isChange())
+                    result = null;
+                else
+                    result = new Address(Address.AddressType.P2SH, scriptHash);
             }
         }
         return result;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Ronald W Hoffman
+ * Copyright 2013-2016 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import java.util.Map;
  * as the private keys have been exported and then imported into the new wallet.</p>
  */
 public abstract class Wallet {
-    
+
     /** Block chain checkpoints */
     protected static final Map<Integer, Sha256Hash> checkpoints = new HashMap<>();
     static {
@@ -60,6 +60,14 @@ public abstract class Wallet {
                         new Sha256Hash("000000000000000082ccf8f1557c5d40b21edabb18d2d691cfbf87118bac7254"));
         checkpoints.put(325000,
                         new Sha256Hash("00000000000000000409695bce21828b31a7143fa35fcab64670dd337a71425d"));
+        checkpoints.put(350000,
+                        new Sha256Hash("0000000000000000053cf64f0400bb38e0c4b3872c38795ddde27acb40a112bb"));
+        checkpoints.put(375000,
+                        new Sha256Hash("000000000000000009733ff8f11fbb9575af7412df3fae97f382376709c965dc"));
+        checkpoints.put(400000,
+                        new Sha256Hash("000000000000000004ec466ce4732fe6f1ed1cddc2ed4b328fff5224276e3f6f"));
+        checkpoints.put(425000,
+                        new Sha256Hash("00000000000000000142adfebcb9a0aa75f0c4980dd5c7dd17062bf7de77c16d"));
     }
 
     /** Database update lock */
@@ -73,7 +81,7 @@ public abstract class Wallet {
 
     /** Current chain work */
     protected BigInteger chainWork;
-    
+
     /** Application data path */
     protected final String dataPath;
 
@@ -306,7 +314,7 @@ public abstract class Wallet {
      * @throws      WalletException     Unable to store the transaction
      */
     public abstract void storeSendTx(SendTransaction sendTx) throws WalletException;
-    
+
     /**
      * Updates the delete status for a send transaction
      *
@@ -350,7 +358,7 @@ public abstract class Wallet {
     /**
      * Deletes all transactions later than the rescan time.  Transactions that are not
      * in a block will not be deleted.
-     * 
+     *
      * @param       rescanTime              Rescan time in seconds
      * @throws      WalletException         Unable to delete transactions
      */

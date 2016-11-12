@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Ronald W Hoffman
+ * Copyright 2013-2016 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,15 +39,15 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
 
     /** Address table column classes */
     private static final Class<?>[] columnClasses = {
-        String.class, String.class};
+        String.class, String.class, String.class};
 
     /** Address table column names */
     private static final String[] columnNames = {
-        "Name", "Address"};
+        "Name", "P2PKH Address", "P2SH Address"};
 
     /** Transaction table column types */
     private static final int[] columnTypes = {
-        SizedTable.NAME, SizedTable.ADDRESS};
+        SizedTable.NAME, SizedTable.ADDRESS, SizedTable.ADDRESS};
 
     /** Address table model */
     private final AddressTableModel tableModel;
@@ -73,6 +73,7 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
         table = new SizedTable(tableModel, columnTypes);
         table.setRowSorter(new TableRowSorter<>(tableModel));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setPreferredScrollableViewportSize(new Dimension(700, 600));
         //
         // Create the table scroll pane
         //
@@ -82,14 +83,13 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
         //
         JPanel tablePane = new JPanel();
         tablePane.setBackground(Color.WHITE);
-        tablePane.add(Box.createGlue());
         tablePane.add(scrollPane);
-        tablePane.add(Box.createGlue());
         //
         // Create the buttons (New, Copy, Edit, Done)
         //
         JPanel buttonPane = new ButtonPane(this, 10, new String[] {"New", "new"},
-                                                     new String[] {"Copy", "copy"},
+                                                     new String[] {"Copy P2PKH", "copy-p2pkh"},
+                                                     new String[] {"Copy P2SH", "copy-p2sh"},
                                                      new String[] {"Edit", "edit"},
                                                      new String[] {"Done", "done"});
         buttonPane.setBackground(Color.white);
@@ -131,10 +131,11 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
     public void actionPerformed(ActionEvent ae) {
 
         //
-        // "new"   - Create a new address entry
-        // "copy"   - Copy an address to the system clipbboard
-        // "edit"   - Edit an address entry
-        // "done"   - All done
+        // "new"        - Create a new address entry
+        // "copy-p2pkh" - Copy a P2PKH address to the system clipbboard
+        // "copy-p2sh"  - Copy a P2SH address to the system clipboard
+        // "edit"       - Edit an address entry
+        // "done"       - All done
         //
         try {
             String action = ae.getActionCommand();
@@ -151,10 +152,16 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
                 } else {
                     row = table.convertRowIndexToModel(row);
                     switch (action) {
-                        case "copy":
+                        case "copy-p2pkh":
                             String address = (String)tableModel.getValueAt(row, 1);
                             StringSelection sel = new StringSelection(address);
                             Clipboard cb = Toolkit.getDefaultToolkit().getSystemClipboard();
+                            cb.setContents(sel, null);
+                            break;
+                        case "copy-p2sh":
+                            address = (String)tableModel.getValueAt(row, 2);
+                            sel = new StringSelection(address);
+                            cb = Toolkit.getDefaultToolkit().getSystemClipboard();
                             cb.setContents(sel, null);
                             break;
                         case "edit":
@@ -329,7 +336,10 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
                     value = key.getLabel();
                     break;
                 case 1:
-                    value = key.toAddress().toString();
+                    value = new Address(Address.AddressType.P2PKH, key.getPubKeyHash()).toString();
+                    break;
+                case 2:
+                    value = new Address(Address.AddressType.P2SH, key.getScriptHash()).toString();
                     break;
                 default:
                     throw new IndexOutOfBoundsException("Table column "+column+" is not valid");

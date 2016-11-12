@@ -224,7 +224,8 @@ public class Main {
             //
             // Initialize the BitcoinCore library
             //
-            NetParams.configure(testNetwork, Parameters.MIN_PROTOCOL_VERSION, Parameters.SOFTWARE_NAME, 0);
+            NetParams.configure(testNetwork, Parameters.MIN_PROTOCOL_VERSION, Parameters.SOFTWARE_NAME,
+                    NetParams.NODE_WITNESS);
             //
             // Start our services on the GUI thread so we can display dialogs
             //
@@ -279,7 +280,7 @@ public class Main {
             //
             int elementCount = Parameters.keys.size()*2 + 15;
             BloomFilter filter = new BloomFilter(elementCount);
-            Parameters.keys.stream().forEach((key) -> {
+            Parameters.keys.forEach((key) -> {
                 filter.insert(key.getPubKey());
                 filter.insert(key.getPubKeyHash());
             });

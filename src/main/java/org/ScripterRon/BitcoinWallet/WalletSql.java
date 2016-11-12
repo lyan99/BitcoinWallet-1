@@ -53,82 +53,83 @@ public class WalletSql extends Wallet {
 
     /** Settings table definition */
     private static final String Settings_Table = "CREATE TABLE IF NOT EXISTS Settings ("
-            + "schema_name              VARCHAR(32) NOT NULL,"      // Database schema name
-            + "schema_version           SMALLINT NOT NULL)";        // Database schema version
+            + "schema_name          VARCHAR(32) NOT NULL,"          // Database schema name
+            + "schema_version       SMALLINT NOT NULL)";            // Database schema version
 
     /** Headers table definitions */
     private static final String Headers_Table = "CREATE TABLE IF NOT EXISTS Headers ("
-            + "db_id                    IDENTITY,"                  // Row identity
-            + "block_hash_index         BIGINT NOT NULL,"           // Block hash index
-            + "block_hash               BINARY NOT NULL,"           // Block hash
-            + "prev_hash_index          BIGINT NOT NULL,"           // Previous block hash index
-            + "Prev_hash                BINARY NOT NULL,"           // Previous block hash
-            + "version                  INTEGER NOT NULL,"          // Block version
-            + "timestamp                BIGINT NOT NULL,"           // Block timestamp
-            + "target_difficulty        BIGINT NOT NULL,"           // Block target difficulty
-            + "merkle_root              BINARY NOT NULL,"           // Block merkle root
-            + "block_height             INTEGER NOT NULL,"          // Block height or -1
-            + "chain_work               BINARY NOT NULL,"           // Chain work
-            + "matches                  BINARY)";                   // Transactin matches or null
+            + "db_id                IDENTITY,"                      // Row identity
+            + "block_hash_index     BIGINT NOT NULL,"               // Block hash index
+            + "block_hash           BINARY NOT NULL,"               // Block hash
+            + "prev_hash_index      BIGINT NOT NULL,"               // Previous block hash index
+            + "Prev_hash            BINARY NOT NULL,"               // Previous block hash
+            + "version              INTEGER NOT NULL,"              // Block version
+            + "timestamp            BIGINT NOT NULL,"               // Block timestamp
+            + "target_difficulty    BIGINT NOT NULL,"               // Block target difficulty
+            + "merkle_root          BINARY NOT NULL,"               // Block merkle root
+            + "block_height         INTEGER NOT NULL,"              // Block height or -1
+            + "chain_work           BINARY NOT NULL,"               // Chain work
+            + "matches              BINARY)";                       // Transactin matches or null
     private static final String Headers_IX1 = "CREATE INDEX IF NOT EXISTS Headers_IX1 ON Headers(block_hash_index)";
     private static final String Headers_IX2 = "CREATE INDEX IF NOT EXISTS Headers_IX2 ON Headers(prev_hash_index)";
     private static final String Headers_IX3 = "CREATE INDEX IF NOT EXISTS Headers_IX3 ON Headers(block_height)";
 
     /** Received table definitions */
     private static final String Received_Table = "CREATE TABLE IF NOT EXISTS Received ("
-            + "db_id                    IDENTITY,"                  // Row identity
-            + "tx_hash_index            BIGINT NOT NULL,"           // Transaction hash index
-            + "tx_hash                  BINARY NOT NULL,"           // Transaction hash
-            + "tx_index                 SMALLINT NOT NULL,"         // Transaction output index
-            + "norm_hash                BINARY NOT NULL,"           // Normalized transaction hash
-            + "timestamp                BIGINT NOT NULL,"           // Transaction timestamp
-            + "block_hash               BINARY,"                    // Block containing the transaction or null
-            + "address                  BINARY NOT NULL,"           // Recipient address
-            + "value                    BIGINT NOT NULL,"           // Transaction value
-            + "script_bytes             BINARY NOT NULL,"           // Transaction output script bytes
-            + "is_spent                 BOOLEAN NOT NULL,"          // Transaction output is spent
-            + "is_change                BOOLEAN NOT NULL,"          // Address is a change address
-            + "in_safe                  BOOLEAN NOT NULL,"          // Transaction output is in the safe
-            + "is_coinbase              BOOLEAN NOT NULL,"          // Transaction is coinbase transaction
-            + "is_deleted               BOOLEAN NOT NULL)";         // Transaction output is deleted
+            + "db_id                IDENTITY,"                      // Row identity
+            + "tx_hash_index        BIGINT NOT NULL,"               // Transaction hash index
+            + "tx_hash              BINARY NOT NULL,"               // Transaction hash
+            + "tx_index             SMALLINT NOT NULL,"             // Transaction output index
+            + "norm_hash            BINARY NOT NULL,"               // Normalized transaction hash
+            + "timestamp            BIGINT NOT NULL,"               // Transaction timestamp
+            + "block_hash           BINARY,"                        // Block containing the transaction or null
+            + "address              BINARY NOT NULL,"               // Recipient address
+            + "value                BIGINT NOT NULL,"               // Transaction value
+            + "script_bytes         BINARY NOT NULL,"               // Transaction output script bytes
+            + "is_spent             BOOLEAN NOT NULL,"              // Transaction output is spent
+            + "is_change            BOOLEAN NOT NULL,"              // Address is a change address
+            + "in_safe              BOOLEAN NOT NULL,"              // Transaction output is in the safe
+            + "is_coinbase          BOOLEAN NOT NULL,"              // Transaction is coinbase transaction
+            + "is_deleted           BOOLEAN NOT NULL)";             // Transaction output is deleted
 
     private static final String Received_IX1 = "CREATE INDEX IF NOT EXISTS Received_IX1 ON Received(tx_hash_index)";
 
     /** Sent table definitions */
     private static final String Sent_Table = "CREATE TABLE IF NOT EXISTS Sent ("
-            + "db_id                    IDENTITY,"                  // Row identity
-            + "tx_hash_index            BIGINT NOT NULL,"           // Transaction hash index
-            + "tx_hash                  BINARY NOT NULL,"           // Transaction hash
-            + "norm_hash                BINARY NOT NULL,"           // Normalized transaction hash
-            + "timestamp                BIGINT NOT NULL,"           // Transaction timestamp
-            + "block_hash               BINARY,"                    // Block containing the transaction or null
-            + "address                  BINARY NOT NULL,"           // Recipient address
-            + "value                    BIGINT NOT NULL,"           // Transaction value
-            + "fee                      BIGINT NOT NULL,"           // Transaction fee
-            + "is_deleted               BOOLEAN NOT NULL,"          // Transaction is deleted
-            + "tx_data                  BINARY NOT NULL)";          // Transaction data
+            + "db_id                IDENTITY,"                      // Row identity
+            + "tx_hash_index        BIGINT NOT NULL,"               // Transaction hash index
+            + "tx_hash              BINARY NOT NULL,"               // Transaction hash
+            + "norm_hash            BINARY NOT NULL,"               // Normalized transaction hash
+            + "timestamp            BIGINT NOT NULL,"               // Transaction timestamp
+            + "block_hash           BINARY,"                        // Block containing the transaction or null
+            + "address              BINARY NOT NULL,"               // Recipient address
+            + "value                BIGINT NOT NULL,"               // Transaction value
+            + "fee                  BIGINT NOT NULL,"               // Transaction fee
+            + "is_deleted           BOOLEAN NOT NULL,"              // Transaction is deleted
+            + "tx_data              BINARY NOT NULL)";              // Transaction data
     private static final String Sent_IX1 = "CREATE UNIQUE INDEX IF NOT EXISTS Sent_IX1 ON Sent(tx_hash_index)";
 
     /** Addresses table definitions */
     private static final String Addresses_Table = "CREATE TABLE IF NOT EXISTS Addresses ("
-            + "db_id                    IDENTITY,"                  // Row identity
-            + "address                  BINARY NOT NULL,"           // Bitcoin address
-            + "label                    VARCHAR)";                  // Associated label or null
+            + "db_id                IDENTITY,"                      // Row identity
+            + "type                 TINYINT,"                       // Address type
+            + "address              BINARY NOT NULL,"               // Bitcoin address
+            + "label                VARCHAR)";                      // Associated label or null
 
     /** Keys table definitions */
     private static final String Keys_Table = "CREATE TABLE IF NOT EXISTS Keys ("
-            + "db_id                    IDENTITY,"                  // Row identity
-            + "public_key               BINARY NOT NULL,"           // Public key
-            + "private_key              BINARY NOT NULL,"           // Encrypted private key
-            + "timestamp                BIGINT NOT NULL,"           // Time key created
-            + "label                    VARCHAR,"                   // Associated label or null
-            + "is_change                BOOLEAN NOT NULL)";         // Is a change key
+            + "db_id                IDENTITY,"                      // Row identity
+            + "public_key           BINARY NOT NULL,"               // Public key
+            + "private_key          BINARY NOT NULL,"               // Encrypted private key
+            + "timestamp            BIGINT NOT NULL,"               // Time key created
+            + "label                VARCHAR,"                       // Associated label or null
+            + "is_change            BOOLEAN NOT NULL)";             // Is a change key
 
     /** Database schema name */
     public static final String schemaName = "BitcoinWallet Block Store";
 
     /** Database schema version */
-    public static final int schemaVersion = 100;
+    public static final int schemaVersion = 101;
 
     /** Per-thread database connection */
     private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
@@ -404,39 +405,43 @@ public class WalletSql extends Wallet {
     private void getSettings() throws WalletException {
         Connection conn = getConnection();
         ResultSet r;
-        try {
+        try (Statement s = conn.createStatement()) {
             //
             // Get the initial values from the Settings table
             //
-            try (PreparedStatement s = conn.prepareStatement("SELECT schema_version FROM Settings "
-                            + "WHERE schema_name=?")) {
-                s.setString(1, schemaName);
-                r = s.executeQuery();
-                if (!r.next())
-                    throw new WalletException("Incorrect database schema");
-                int version = r.getInt(1);
-                if (version != schemaVersion) {
-                    log.error(String.format("Schema version %d.%d is not supported", version/100, version%100));
-                    throw new WalletException("Schema version is not supported");
-                }
+            r = s.executeQuery("SELECT schema_version FROM Settings WHERE schema_name='" + schemaName + "'");
+            if (!r.next())
+                throw new WalletException("Incorrect database schema");
+            int version = r.getInt(1);
+            if (version > schemaVersion) {
+                log.error(String.format("Schema version %d.%d is not supported", version/100, version%100));
+                throw new WalletException("Schema version is not supported");
+            }
+            r.close();
+            //
+            // Update the database schema if necessary
+            //
+            switch (version) {
+                case 100:
+                    s.executeUpdate("ALTER TABLE Addresses ADD COLUMN IF NOT EXISTS type TINYINT");
+                    //
+                    // Insert new version updates before this comment
+                    //
+                    s.executeUpdate("UPDATE Settings SET schema_version=" + schemaVersion);
             }
             //
             // Get the current chain values from the chain head block
             //
-            try (Statement s = conn.createStatement()) {
-                //
-                // Get the current chain head from the BlockChain database
-                //
-                r = s.executeQuery("SELECT block_hash,block_height,chain_work FROM Headers "
-                            + "WHERE block_height=(SELECT MAX(block_height) FROM Headers)");
-                if (!r.next()) {
-                    log.error("SQL database is not initialized");
-                    throw new WalletException("SQL database is not initialized");
-                }
-                chainHead = new Sha256Hash(r.getBytes(1));
-                chainHeight = r.getInt(2);
-                chainWork = new BigInteger(r.getBytes(3));
+            r = s.executeQuery("SELECT block_hash,block_height,chain_work FROM Headers "
+                        + "WHERE block_height=(SELECT MAX(block_height) FROM Headers)");
+            if (!r.next()) {
+                log.error("SQL database is not initialized");
+                throw new WalletException("SQL database is not initialized");
             }
+            chainHead = new Sha256Hash(r.getBytes(1));
+            chainHeight = r.getInt(2);
+            chainWork = new BigInteger(r.getBytes(3));
+            r.close();
             //
             // Initialization complete
             //
@@ -530,6 +535,27 @@ public class WalletSql extends Wallet {
     }
 
     /**
+     * Get the address type
+     *
+     * @param       address             Address
+     * @throws      WalletException     Unsupported address type
+     */
+    private int getAddressType(Address address) throws WalletException {
+        int addressType;
+        switch (address.getType()) {
+            case P2PKH:
+                addressType = 0;
+                break;
+            case P2SH:
+                addressType = 1;
+                break;
+            default:
+                throw new WalletException("Unsupported address type " + address.getType());
+        }
+        return addressType;
+    }
+
+    /**
      * Stores an address
      *
      * @param       address             Address
@@ -537,13 +563,16 @@ public class WalletSql extends Wallet {
      */
     @Override
     public void storeAddress(Address address) throws WalletException {
+        int addressType = getAddressType(address);
         Connection conn = getConnection();
-        try (PreparedStatement s = conn.prepareStatement("INSERT INTO Addresses (address,label) VALUES(?,?)")) {
-            s.setBytes(1, address.getHash());
+        try (PreparedStatement s = conn.prepareStatement("INSERT INTO Addresses "
+                + "(type,address,label) VALUES(?,?,?)")) {
+            s.setByte(1, (byte)addressType);
+            s.setBytes(2, address.getHash());
             if (address.getLabel().isEmpty())
-                s.setNull(2, Types.VARCHAR);
+                s.setNull(3, Types.VARCHAR);
             else
-                s.setString(2, address.getLabel());
+                s.setString(3, address.getLabel());
             s.executeUpdate();
         } catch (SQLException exc) {
             log.error("Unable to store address", exc);
@@ -559,13 +588,16 @@ public class WalletSql extends Wallet {
      */
     @Override
     public void setAddressLabel(Address address) throws WalletException {
+        int addressType = getAddressType(address);
         Connection conn = getConnection();
-        try (PreparedStatement s = conn.prepareStatement("UPDATE Addresses SET label=? WHERE address=?")) {
+        try (PreparedStatement s = conn.prepareStatement("UPDATE Addresses SET label=? "
+                + "WHERE type=? AND address=?")) {
             if (address.getLabel().isEmpty())
                 s.setNull(1, Types.VARCHAR);
             else
                 s.setString(1, address.getLabel());
-            s.setBytes(2, address.getHash());
+            s.setByte(2, (byte)addressType);
+            s.setBytes(3, address.getHash());
             s.executeUpdate();
         } catch (SQLException exc) {
             log.error("Unable to update address label", exc);
@@ -581,9 +613,12 @@ public class WalletSql extends Wallet {
      */
     @Override
     public void deleteAddress(Address address) throws WalletException {
+        int addressType = getAddressType(address);
         Connection conn = getConnection();
-        try (PreparedStatement s = conn.prepareStatement("DELETE FROM Addresses WHERE address=?")) {
-            s.setBytes(1, address.getHash());
+        try (PreparedStatement s = conn.prepareStatement("DELETE FROM Addresses "
+                + "WHERE type=? AND address=?")) {
+            s.setByte(1, (byte)addressType);
+            s.setBytes(2, address.getHash());
             s.executeUpdate();
         } catch (SQLException exc) {
             log.error("Unable to delete address", exc);
@@ -603,10 +638,17 @@ public class WalletSql extends Wallet {
         Connection conn = getConnection();
         ResultSet r;
         try (Statement s = conn.createStatement()) {
-            r = s.executeQuery("SELECT address,label FROM Addresses ORDER BY label ASC NULLS FIRST");
+            r = s.executeQuery("SELECT type,address,label FROM Addresses ORDER BY label ASC NULLS FIRST");
             while (r.next()) {
-                String label = r.getString(2);
-                addressList.add(new Address(r.getBytes(1), label!=null?label:""));
+                int addressType = r.getByte(1);
+                Address.AddressType type;
+                if (addressType == 0)
+                    type = Address.AddressType.P2PKH;
+                else
+                    type = Address.AddressType.P2SH;
+                byte[] hash = r.getBytes(2);
+                String label = r.getString(3);
+                addressList.add(new Address(type, hash, label!=null?label:""));
             }
         } catch (SQLException exc) {
             log.error("Unable to get address list", exc);

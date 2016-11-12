@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Ronald W Hoffman
+ * Copyright 2014-2016 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,10 @@ import java.util.List;
  */
 public class WalletMessageListener extends AbstractMessageListener {
 
+    /** Required node services */
+    private static final long REQUIRED_SERVICES =
+            NetParams.NODE_NETWORK + NetParams.NODE_BLOOM + NetParams.NODE_WITNESS;
+
     /**
      * Handle an inventory request
      *
@@ -57,11 +61,16 @@ public class WalletMessageListener extends AbstractMessageListener {
         Peer peer = msg.getPeer();
         List<InventoryItem> notFoundList = new ArrayList<>(invList.size());
         //
-        // Process the inventory list and request new transactions
+        // Process the inventory list and send the requested transactions.
+        // We don't support non-witness requests since transaction verification
+        // will fail without the witness data.  A node that supports segregated
+        // witness will always use INV_WITNESS_TX instead of INV_TX when requesting
+        // a transaction.  Our response will be a normal transaction if there is
+        // no witness data.
         //
-        invList.stream().forEach((item) -> {
+        invList.forEach((item) -> {
             switch (item.getType()) {
-                case InventoryItem.INV_TX:
+                case InventoryItem.INV_WITNESS_TX:
                     try {
                         SendTransaction sendTx = Parameters.wallet.getSendTx(item.getHash());
                         if (sendTx != null) {
@@ -110,16 +119,19 @@ public class WalletMessageListener extends AbstractMessageListener {
         // current network height because the previous scan may have been interrupted and
         // the Bloom filter changed.
         //
-        invList.stream().forEach((item) -> {
+        // Since we don't do signature verification, we will use INV_TX instead of
+        // INV_WITNESS_TX so the node doesn't send us the witness data.
+        //
+        invList.forEach((item) -> {
             try {
                 switch (item.getType()) {
                     case InventoryItem.INV_TX:
                         if (Parameters.wallet.isNewTransaction(item.getHash())) {
                             PeerRequest request = new PeerRequest(item.getHash(), InventoryItem.INV_TX, peer);
                             synchronized(Parameters.lock) {
-                            if (!Parameters.pendingRequests.contains(request) &&
+                                if (!Parameters.pendingRequests.contains(request) &&
                                             !Parameters.processedRequests.contains(request))
-                                Parameters.pendingRequests.add(request);
+                                    Parameters.pendingRequests.add(request);
                             }
                         }
                         break;
@@ -158,7 +170,7 @@ public class WalletMessageListener extends AbstractMessageListener {
         //
         // Process the inventory list and retry the failing requests
         //
-        invList.stream().forEach((item) -> {
+        invList.forEach((item) -> {
             synchronized(Parameters.lock) {
                 Iterator<PeerRequest> it = Parameters.processedRequests.iterator();
                 while (it.hasNext()) {
@@ -176,7 +188,8 @@ public class WalletMessageListener extends AbstractMessageListener {
     /**
      * Process a peer address list
      *
-     * <p>This method is called when an 'addr' message is received.</p>
+     * <p>This method is called when an 'addr' message is received.  We will
+     * add nodes that support bloom filters and segregated witness to our address list.</p>
      *
      * @param       msg             Message
      * @param       addresses       Peer address list
@@ -188,11 +201,11 @@ public class WalletMessageListener extends AbstractMessageListener {
         // are presumably more current than what we have
         //
         synchronized(Parameters.lock) {
-            addresses.stream().forEach((addr) -> {
+            addresses.forEach((addr) -> {
                 PeerAddress chkAddr = Parameters.peerMap.get(addr);
                 if (chkAddr != null) {
                     chkAddr.setTimeStamp(addr.getTimeStamp());
-                } else {
+                } else if ((addr.getServices()&REQUIRED_SERVICES) == REQUIRED_SERVICES) {
                     Parameters.peerAddresses.add(0, addr);
                     Parameters.peerMap.put(addr, addr);
                 }
@@ -231,7 +244,7 @@ public class WalletMessageListener extends AbstractMessageListener {
         //
         // Add the block headers to the database handler queue for processing
         //
-        hdrList.stream().forEach((header) -> {
+        hdrList.forEach((header) -> {
             try {
                 Parameters.databaseQueue.put(header);
             } catch (InterruptedException exc) {
@@ -364,10 +377,10 @@ public class WalletMessageListener extends AbstractMessageListener {
     public void processVersion(Message msg, PeerAddress localAddress) {
         Peer peer = msg.getPeer();
         //
-        // Disconnect the peer if it doesn't provide node services.  Otherwise, increment
-        // the version handshake stage.
+        // Disconnect the peer if it doesn't provide the required node services.  Otherwise,
+        // increment the version handshake stage.
         //
-        if ((peer.getServices()&NetParams.NODE_NETWORK) == 0) {
+        if ((peer.getServices()&REQUIRED_SERVICES) != REQUIRED_SERVICES) {
             peer.setDisconnect(true);
             log.info(String.format("Connection rejected from %s", peer.getAddress().toString()));
         } else {

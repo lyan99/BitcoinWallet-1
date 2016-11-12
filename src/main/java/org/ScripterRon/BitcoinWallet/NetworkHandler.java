@@ -254,7 +254,7 @@ public class NetworkHandler implements Runnable {
                 if (currentTime > lastConnectionCheckTime+5*60) {
                     lastConnectionCheckTime = currentTime;
                     List<Peer> inactiveList = new LinkedList<>();
-                    connections.stream().forEach((chkPeer) -> {
+                    connections.forEach((chkPeer) -> {
                         PeerAddress chkAddress = chkPeer.getAddress();
                         if (chkAddress.getTimeStamp() < currentTime-10*60) {
                             inactiveList.add(chkPeer);
@@ -273,7 +273,7 @@ public class NetworkHandler implements Runnable {
                             }
                         }
                     });
-                    inactiveList.stream().forEach((chkPeer) -> {
+                    inactiveList.forEach((chkPeer) -> {
                         log.info(String.format("Closing connection due to inactivity: %s",
                                                chkPeer.getAddress().toString()));
                         closeConnection(chkPeer);
@@ -705,7 +705,7 @@ public class NetworkHandler implements Runnable {
             // Notify listeners
             //
             if (peer.getVersionCount() > 2) {
-                listeners.stream().forEach((listener) -> listener.connectionEnded(peer));
+                listeners.forEach((listener) -> listener.connectionEnded(peer));
             }
             log.info(String.format("Connection closed with peer %s", address.toString()));
         } catch (IOException exc) {
@@ -794,7 +794,7 @@ public class NetworkHandler implements Runnable {
                 //
                 // Notify listeners about the new connection
                 //
-                listeners.stream().forEach((listener) -> listener.connectionStarted(peer));
+                listeners.forEach((listener) -> listener.connectionStarted(peer));
             }
         }
     }
