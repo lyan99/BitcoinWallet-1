@@ -19,6 +19,7 @@ import org.ScripterRon.BitcoinCore.Address;
 import org.ScripterRon.BitcoinCore.ECKey;
 import org.ScripterRon.BitcoinCore.FilterLoadMessage;
 import org.ScripterRon.BitcoinCore.Message;
+import org.ScripterRon.BitcoinCore.Script;
 
 import javax.swing.*;
 import javax.swing.table.*;
@@ -238,7 +239,9 @@ public class ReceiveAddressDialog extends JDialog implements ActionListener {
                 } else {
                     Parameters.wallet.storeKey(key);
                     Parameters.bloomFilter.insert(key.getPubKey());
+                    Parameters.bloomFilter.insert(Script.getRedeemScript(key.getPubKeyHash(), false));
                     Parameters.bloomFilter.insert(key.getPubKeyHash());
+                    Parameters.bloomFilter.insert(key.getScriptHash());
                     Message filterMsg = FilterLoadMessage.buildFilterLoadMessage(null, Parameters.bloomFilter);
                     Parameters.networkHandler.broadcastMessage(filterMsg);
                 }

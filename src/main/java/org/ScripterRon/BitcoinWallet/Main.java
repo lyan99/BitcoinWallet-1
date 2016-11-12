@@ -278,11 +278,16 @@ public class Main {
             //
             // Create our bloom filter
             //
-            int elementCount = Parameters.keys.size()*2 + 15;
+            // Relevant ScriptSig elements are the public key and the redeem script
+            // Relevant ScriptPubKey elements are the public key hash and the redeem script hash
+            //
+            int elementCount = Parameters.keys.size()*4 + 15;
             BloomFilter filter = new BloomFilter(elementCount);
             Parameters.keys.forEach((key) -> {
                 filter.insert(key.getPubKey());
+                filter.insert(Script.getRedeemScript(key.getPubKeyHash(), false));
                 filter.insert(key.getPubKeyHash());
+                filter.insert(key.getScriptHash());
             });
             Parameters.bloomFilter = filter;
             //
