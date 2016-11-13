@@ -102,7 +102,8 @@ public class WalletSql extends Wallet {
             + "norm_hash            BINARY NOT NULL,"               // Normalized transaction hash
             + "timestamp            BIGINT NOT NULL,"               // Transaction timestamp
             + "block_hash           BINARY,"                        // Block containing the transaction or null
-            + "address              BINARY NOT NULL,"               // Recipient address
+            + "address_type         TINYINT,"                       // Address type
+            + "address              BINARY NOT NULL,"               // Recipient address hash
             + "value                BIGINT NOT NULL,"               // Transaction value
             + "fee                  BIGINT NOT NULL,"               // Transaction fee
             + "is_deleted           BOOLEAN NOT NULL,"              // Transaction is deleted
@@ -113,7 +114,7 @@ public class WalletSql extends Wallet {
     private static final String Addresses_Table = "CREATE TABLE IF NOT EXISTS Addresses ("
             + "db_id                IDENTITY,"                      // Row identity
             + "type                 TINYINT,"                       // Address type
-            + "address              BINARY NOT NULL,"               // Bitcoin address
+            + "address              BINARY NOT NULL,"               // Address hash
             + "label                VARCHAR)";                      // Associated label or null
 
     /** Keys table definitions */
@@ -129,7 +130,7 @@ public class WalletSql extends Wallet {
     public static final String schemaName = "BitcoinWallet Block Store";
 
     /** Database schema version */
-    public static final int schemaVersion = 101;
+    public static final int schemaVersion = 102;
 
     /** Per-thread database connection */
     private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
@@ -424,6 +425,8 @@ public class WalletSql extends Wallet {
             switch (version) {
                 case 100:
                     s.executeUpdate("ALTER TABLE Addresses ADD COLUMN IF NOT EXISTS type TINYINT");
+                case 101:
+                    s.executeUpdate("ALTER TABLE Sent ADD COLUMN IF NOT EXISTS address_type TINYINT");
                     //
                     // Insert new version updates before this comment
                     //
@@ -640,12 +643,7 @@ public class WalletSql extends Wallet {
         try (Statement s = conn.createStatement()) {
             r = s.executeQuery("SELECT type,address,label FROM Addresses ORDER BY label ASC NULLS FIRST");
             while (r.next()) {
-                int addressType = r.getByte(1);
-                Address.AddressType type;
-                if (addressType == 0)
-                    type = Address.AddressType.P2PKH;
-                else
-                    type = Address.AddressType.P2SH;
+                Address.AddressType type = (r.getByte(1)==1 ? Address.AddressType.P2SH : Address.AddressType.P2PKH);
                 byte[] hash = r.getBytes(2);
                 String label = r.getString(3);
                 addressList.add(new Address(type, hash, label!=null?label:""));
@@ -1061,7 +1059,7 @@ public class WalletSql extends Wallet {
                 long txTime = r.getLong(4);
                 byte[] bytes = r.getBytes(5);
                 Sha256Hash blockHash = (bytes!=null ? new Sha256Hash(bytes) : null);
-                Address address = new Address(r.getBytes(6));
+                Address address = new Address(r.getBytes(6));   // Receive transactions always use P2PKH address
                 BigInteger value = BigInteger.valueOf(r.getLong(7));
                 byte[] scriptBytes = r.getBytes(8);
                 boolean isSpent = r.getBoolean(9);
@@ -1098,10 +1096,12 @@ public class WalletSql extends Wallet {
      */
     @Override
     public void storeSendTx(SendTransaction sendTx) throws WalletException {
+        int addressType = getAddressType(sendTx.getAddress());
         Connection conn = getConnection();
         try (PreparedStatement s = conn.prepareStatement("INSERT INTO Sent "
-                            + "(tx_hash_index,tx_hash,norm_hash,timestamp,block_hash,address,value,fee,"
-                            + "is_deleted,tx_data) VALUES(?,?,?,?,?,?,?,?,false,?)")) {
+                    + "(tx_hash_index,tx_hash,norm_hash,timestamp,block_hash,"
+                    + "address_type,address,value,fee,is_deleted,tx_data) "
+                    + "VALUES(?,?,?,?,?,?,?,?,?,false,?)")) {
             s.setLong(1, getHashIndex(sendTx.getTxHash()));
             s.setBytes(2, sendTx.getTxHash().getBytes());
             s.setBytes(3, sendTx.getNormalizedID().getBytes());
@@ -1110,10 +1110,11 @@ public class WalletSql extends Wallet {
                 s.setNull(5, Types.BINARY);
             else
                 s.setBytes(5, sendTx.getBlockHash().getBytes());
-            s.setBytes(6, sendTx.getAddress().getHash());
-            s.setLong(7, sendTx.getValue().longValue());
-            s.setLong(8, sendTx.getFee().longValue());
-            s.setBytes(9, sendTx.getTxData());
+            s.setByte(6, (byte)addressType);
+            s.setBytes(7, sendTx.getAddress().getHash());
+            s.setLong(8, sendTx.getValue().longValue());
+            s.setLong(9, sendTx.getFee().longValue());
+            s.setBytes(10, sendTx.getTxData());
             s.executeUpdate();
         } catch (SQLException exc) {
             log.error(String.format("Unable to store send transaction\n  Tx %s", sendTx.getTxHash()), exc);
@@ -1155,8 +1156,9 @@ public class WalletSql extends Wallet {
         SendTransaction tx = null;
         Connection conn = getConnection();
         ResultSet r;
-        try (PreparedStatement s = conn.prepareStatement("SELECT norm_hash,timestamp,block_hash,address,value,fee,"
-                            + "tx_data FROM Sent WHERE tx_hash_index=? AND tx_hash=? AND is_deleted=false")) {
+        try (PreparedStatement s = conn.prepareStatement("SELECT norm_hash,timestamp,block_hash,"
+                + "address_type,address,value,fee,tx_data "
+                + "FROM Sent WHERE tx_hash_index=? AND tx_hash=? AND is_deleted=false")) {
             s.setLong(1, getHashIndex(txHash));
             s.setBytes(2, txHash.getBytes());
             r = s.executeQuery();
@@ -1165,10 +1167,11 @@ public class WalletSql extends Wallet {
                 long txTime = r.getLong(2);
                 byte[] bytes = r.getBytes(3);
                 Sha256Hash blockHash = (bytes!=null ? new Sha256Hash(bytes) : null);
-                Address address = new Address(r.getBytes(4));
-                BigInteger value = BigInteger.valueOf(r.getLong(5));
-                BigInteger fee = BigInteger.valueOf(r.getLong(6));
-                byte[] txData = r.getBytes(7);
+                Address.AddressType type = (r.getByte(4)==1 ? Address.AddressType.P2SH : Address.AddressType.P2PKH);
+                Address address = new Address(type, r.getBytes(5));
+                BigInteger value = BigInteger.valueOf(r.getLong(6));
+                BigInteger fee = BigInteger.valueOf(r.getLong(7));
+                byte[] txData = r.getBytes(8);
                 tx = new SendTransaction(normID, txHash, txTime, blockHash, address, value, fee, txData);
             }
         } catch (SQLException exc) {
@@ -1193,7 +1196,8 @@ public class WalletSql extends Wallet {
         Connection conn = getConnection();
         ResultSet r;
         try (PreparedStatement s = conn.prepareStatement("SELECT tx_hash,norm_hash,timestamp,"
-                            + "block_hash,address,value,fee,tx_data FROM Sent WHERE is_deleted=false")) {
+                + "block_hash,address_type,address,value,fee,tx_data "
+                + "FROM Sent WHERE is_deleted=false")) {
             r = s.executeQuery();
             while (r.next()) {
                 Sha256Hash txHash = new Sha256Hash(r.getBytes(1));
@@ -1201,12 +1205,13 @@ public class WalletSql extends Wallet {
                 long txTime = r.getLong(3);
                 byte[] bytes = r.getBytes(4);
                 Sha256Hash blockHash = (bytes!=null ? new Sha256Hash(bytes) : null);
-                Address address = new Address(r.getBytes(5));
-                BigInteger value = BigInteger.valueOf(r.getLong(6));
-                BigInteger fee = BigInteger.valueOf(r.getLong(7));
-                byte[] txData = r.getBytes(8);
+                Address.AddressType type = (r.getByte(5)==1 ? Address.AddressType.P2SH : Address.AddressType.P2PKH);
+                Address address = new Address(type, r.getBytes(6));
+                BigInteger value = BigInteger.valueOf(r.getLong(7));
+                BigInteger fee = BigInteger.valueOf(r.getLong(8));
+                byte[] txData = r.getBytes(9);
                 SendTransaction tx = new SendTransaction(normID, txHash, txTime, blockHash, address,
-                                                               value, fee, txData);
+                                                         value, fee, txData);
                 SendTransaction prevTx = txMap.get(normID);
                 if (blockHash != null) {
                     if (prevTx != null)

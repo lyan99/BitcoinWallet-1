@@ -354,9 +354,8 @@ public class DatabaseHandler implements Runnable {
                         if (key.isChange())
                             totalChange = totalChange.add(txOutput.getValue());
                         ReceiveTransaction rcvTx = new ReceiveTransaction(tx.getNormalizedID(),
-                                            txHash, txIndex, txTime, blockHash, key.toAddress(),
-                                            txOutput.getValue(), txOutput.getScriptBytes(),
-                                            key.isChange(), tx.isCoinBase());
+                                txHash, txIndex, txTime, blockHash, key.toAddress(), txOutput.getValue(),
+                                txOutput.getScriptBytes(), key.isChange(), tx.isCoinBase());
                         Parameters.wallet.storeReceiveTx(rcvTx);
                         txUpdated = true;
                     }
@@ -398,18 +397,16 @@ public class DatabaseHandler implements Runnable {
                         BigInteger fee = totalInput.subtract(totalValue);
                         BigInteger sentValue = totalValue.subtract(totalChange);
                         SendTransaction sendTx = new SendTransaction(tx.getNormalizedID(), txHash,
-                                            txTime-15, blockHash, address, sentValue, fee, tx.getBytes());
+                                txTime-15, blockHash, address, sentValue, fee,
+                                (tx.isWitness() ? tx.getWitnessBytes() : tx.getBytes()));
                         Parameters.wallet.storeSendTx(sendTx);
                     }
                 }
                 //
                 // Notify any listeners that one or more transactions have been updated
                 //
-                if (txUpdated) {
-                    listeners.forEach((listener) -> {
-                        listener.txUpdated();
-                    });
-                }
+                if (txUpdated)
+                    listeners.forEach((listener) -> listener.txUpdated());
             }
         } catch (WalletException exc) {
             log.error(String.format("Unable to process transaction\n  %s", txHash), exc);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Ronald W Hoffman
+ * Copyright 2013-2016 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ public class SendTransaction extends WalletTransaction {
      * @param       txHash              Transaction hash
      * @param       txTime              Transaction timestamp
      * @param       blockHash           Chain block containing the transaction or null
-     * @param       address             Send address
+     * @param       address             Send address (P2PKH or P2SH)
      * @param       value               Transaction value
      * @param       fee                 Transaction fee
      * @param       txData              Serialized transaction

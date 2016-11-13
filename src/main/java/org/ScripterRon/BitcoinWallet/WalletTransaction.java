@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Ronald W Hoffman
+ * Copyright 2013-2016 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class WalletTransaction {
     /** Block hash for the chain block containing the transaction */
     protected Sha256Hash blockHash;
 
-    /** Receiving address */
+    /** Transaction address */
     protected Address address;
 
     /** Transaction value */
@@ -50,7 +50,7 @@ public class WalletTransaction {
      * @param       txHash              Transaction hash
      * @param       txTime              Transaction timestamp
      * @param       blockHash           Chain block containing the transaction or null
-     * @param       address             Send address
+     * @param       address             Transaction address
      * @param       value               Transaction value
      */
     public WalletTransaction(Sha256Hash normID, Sha256Hash txHash, long txTime, Sha256Hash blockHash,
@@ -100,7 +100,7 @@ public class WalletTransaction {
     }
 
     /**
-     * Returns the send address
+     * Returns the transaction address
      *
      * @return                          Send address
      */

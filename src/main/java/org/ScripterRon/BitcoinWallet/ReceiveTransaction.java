@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Ronald W Hoffman
+ * Copyright 2013-2016 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class ReceiveTransaction extends WalletTransaction {
      * @param       txIndex             Transaction output index
      * @param       txTime              Transaction timestamp
      * @param       blockHash           Chain block containing the transaction or null
-     * @param       address             Receiving address
+     * @param       address             Receiving public key address
      * @param       value               Transaction value
      * @param       scriptBytes         Transaction output script bytes
      * @param       isChange            TRUE if change transaction
@@ -73,7 +73,7 @@ public class ReceiveTransaction extends WalletTransaction {
      * @param       txIndex             Transaction output index
      * @param       txTime              Transaction timestamp
      * @param       blockHash           Chain block containing the transaction or null
-     * @param       address             Receiving address
+     * @param       address             Receiving public key address
      * @param       value               Transaction value
      * @param       scriptBytes         Transaction output script bytes
      * @param       isSpent             TRUE if transaction value has been spent

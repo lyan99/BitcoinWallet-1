@@ -285,8 +285,12 @@ public class SendDialog extends JDialog implements ActionListener {
             List<TransactionOutput> outputs = new ArrayList<>(2);
             outputs.add(new TransactionOutput(0, sendAmount, sendAddress));
             BigInteger change = totalAmount.negate();
-            if (change.compareTo(Parameters.DUST_TRANSACTION) > 0)
-                outputs.add(new TransactionOutput(1, change, Parameters.changeKey.toAddress()));
+            if (change.compareTo(Parameters.DUST_TRANSACTION) > 0) {
+                Address.AddressType type = sendAddress.getType();
+                byte[] hash = (type==Address.AddressType.P2SH ?
+                        Parameters.changeKey.getScriptHash() : Parameters.changeKey.getPubKeyHash());
+                outputs.add(new TransactionOutput(1, change, new Address(type, hash)));
+            }
             //
             // Create the new transaction using the supplied inputs and outputs
             //

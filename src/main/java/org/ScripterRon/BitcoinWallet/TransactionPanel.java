@@ -437,6 +437,7 @@ public class TransactionPanel extends JPanel implements ActionListener {
                     value = null;
                     Address addr = tx.getAddress();
                     if (tx instanceof ReceiveTransaction) {
+                        // We store the P2PKH address for all receive transactions
                         for (ECKey chkKey : Parameters.keys) {
                             if (Arrays.equals(chkKey.getPubKeyHash(), addr.getHash())) {
                                 if (chkKey.getLabel().length() > 0)
@@ -446,7 +447,8 @@ public class TransactionPanel extends JPanel implements ActionListener {
                         }
                     } else {
                         for (Address chkAddr : Parameters.addresses) {
-                            if (Arrays.equals(chkAddr.getHash(), addr.getHash())) {
+                            // We store the actual address (P2PKH or P2SH) for send transactions
+                            if (chkAddr.equals(addr)) {
                                 if (chkAddr.getLabel().length() > 0)
                                     value = chkAddr.getLabel();
                                 break;
