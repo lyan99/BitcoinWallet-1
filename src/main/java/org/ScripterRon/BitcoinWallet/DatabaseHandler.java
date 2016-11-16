@@ -49,10 +49,10 @@ public class DatabaseHandler implements Runnable {
     private static final int witnessFlag = 2;
 
     /** Segregated Witness enable time (November 15, 2016) */
-    private static final long witnessEnable = 1479168;
+    private static final long witnessEnable = 1479168000;
 
     /** Segregated Witness timeout (November 15, 2017) */
-    private static final long witnessTimeout = 1510704;
+    private static final long witnessTimeout = 1510704000;
 
     /** Segregated Witness consensus */
     private static final long witnessConsensus = (2106*95)/100;
@@ -366,11 +366,13 @@ public class DatabaseHandler implements Runnable {
             return true;
         int height = blockHeader.getBlockHeight();
         if (height%2106 == 0) {
+            log.debug("Starting new soft fork interval at height " + height);
             Parameters.prevIntervalCounter = Parameters.currentIntervalCounter;
             Parameters.currentIntervalCounter = 0;
         }
         int version = blockHeader.getVersion();
         if ((version&BlockHeader.VERSION_MASK) == BlockHeader.VERSION_BIP9 && ((version&witnessFlag) != 0)) {
+            log.debug("Found block signalling segregated witness at height " + height);
             Parameters.currentIntervalCounter++;
         }
         Parameters.wallet.setIntervalCounters(Parameters.currentIntervalCounter, Parameters.prevIntervalCounter);
