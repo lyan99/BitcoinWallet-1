@@ -151,6 +151,34 @@ public abstract class Wallet {
     public abstract List<Sha256Hash> getChainList(int startHeight, Sha256Hash stopBlock) throws WalletException;
 
     /**
+     * Activate segregated witness
+     *
+     * @throws      WalletException     Unable to set activation flag
+     */
+    public abstract void activateWitness() throws WalletException;
+
+    /**
+     * Return the current and previous interval counters
+     *
+     * The interval counters are used to track soft fork activation as defined in BIP 9
+     *
+     * @return                          Current and previous interval counters
+     * @throws      WalletException     Unable to get interval counters
+     */
+    public abstract int[] getIntervalCounters() throws WalletException;
+
+    /**
+     * Set the current and previous interval counters
+     *
+     * The interval counters are used to track soft fork activation as defined in BIP 9
+     *
+     * @param       currentInterval     Current interval counter
+     * @param       prevInterval        Previous interval counter
+     * @throws      WalletException     Unable to store interval counters
+     */
+    public abstract void setIntervalCounters(int currentInterval, int prevInterval) throws WalletException;
+
+    /**
      * Stores an address
      *
      * @param       address             Address
@@ -240,6 +268,17 @@ public abstract class Wallet {
      * @throws      WalletException     Unable to retrieve the block header
      */
     public abstract StoredHeader getHeader(Sha256Hash blockHash) throws WalletException;
+
+    /**
+     * Return the block versions for the interval containing the supplied block
+     *
+     * An interval consists of 2106 blocks
+     *
+     * @param       height              Block height
+     * @return                          Version list from the interval start to the supplied height
+     * @throws      WalletException     Unable to retrieve the block versions
+     */
+    public abstract List<Integer> getBlockVersions(int height) throws WalletException;
 
     /**
      * Returns the block header for the child of the specified block

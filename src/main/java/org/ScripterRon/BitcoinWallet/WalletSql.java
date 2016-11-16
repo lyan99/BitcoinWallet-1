@@ -54,7 +54,10 @@ public class WalletSql extends Wallet {
     /** Settings table definition */
     private static final String Settings_Table = "CREATE TABLE IF NOT EXISTS Settings ("
             + "schema_name          VARCHAR(32) NOT NULL,"          // Database schema name
-            + "schema_version       SMALLINT NOT NULL)";            // Database schema version
+            + "schema_version       SMALLINT NOT NULL,"             // Database schema version
+            + "witness_activated    BOOLEAN,"                       // Segregated Witness activated
+            + "previous_interval    SMALLINT,"                      // Previous interval counter
+            + "current_interval     SMALLINT)";                     // Current interval counter
 
     /** Headers table definitions */
     private static final String Headers_Table = "CREATE TABLE IF NOT EXISTS Headers ("
@@ -130,7 +133,7 @@ public class WalletSql extends Wallet {
     public static final String schemaName = "BitcoinWallet Block Store";
 
     /** Database schema version */
-    public static final int schemaVersion = 102;
+    public static final int schemaVersion = 103;
 
     /** Per-thread database connection */
     private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
@@ -427,10 +430,24 @@ public class WalletSql extends Wallet {
                     s.executeUpdate("ALTER TABLE Addresses ADD COLUMN IF NOT EXISTS type TINYINT");
                 case 101:
                     s.executeUpdate("ALTER TABLE Sent ADD COLUMN IF NOT EXISTS address_type TINYINT");
+                case 102:
+                    s.executeUpdate("ALTER TABLE Settings ADD COLUMN IF NOT EXISTS witness_activated BOOLEAN");
+                    s.executeUpdate("ALTER TABLE Settings ADD COLUMN IF NOT EXISTS previous_interval SMALLINT");
+                    s.executeUpdate("ALTER TABLE Settings ADD COLUMN IF NOT EXISTS current_interval SMALLINT");
                     //
                     // Insert new version updates before this comment
                     //
                     s.executeUpdate("UPDATE Settings SET schema_version=" + schemaVersion);
+            }
+            //
+            // Get the current soft fork values
+            //
+            r = s.executeQuery("SELECT witness_activated,current_interval,previous_interval FROM Settings");
+            if (r.next()) {
+                Parameters.witnessActivated = r.getBoolean(1);
+                Parameters.currentIntervalCounter = r.getShort(2);
+                Parameters.prevIntervalCounter = r.getShort(3);
+                log.info("Segregated Witness is" + (Parameters.witnessActivated ? " " : " not ") + "activated");
             }
             //
             // Get the current chain values from the chain head block
@@ -453,6 +470,68 @@ public class WalletSql extends Wallet {
         } catch (SQLException exc) {
             log.error("Unable to get initial table settings", exc);
             throw new WalletException("Unable to get initial table settings");
+        }
+    }
+
+    /**
+     * Activate segregated witness
+     *
+     * @throws      WalletException     Unable to set activation flag
+     */
+    @Override
+    public void activateWitness() throws WalletException {
+        Connection conn = getConnection();
+        try (PreparedStatement s = conn.prepareStatement("UPDATE Settings SET witness_activated=TRUE")) {
+        } catch (SQLException exc) {
+            log.error("Unable to activate Segregated Witness", exc);
+            throw new WalletException("Unable to activate Segregated Witness");
+        }
+    }
+
+    /**
+     * Return the current and previous interval counters
+     *
+     * The interval counters are used to track soft fork activation as defined in BIP 9
+     *
+     * @return                          Current and previous interval counters
+     * @throws      WalletException     Unable to get the interval counters
+     */
+    @Override
+    public int[] getIntervalCounters() throws WalletException {
+        Connection conn = getConnection();
+        int[] result = new int[2];
+        try (PreparedStatement s = conn.prepareStatement("SELECT current_interval,prev_interval FROM Settings")) {
+            ResultSet r = s.executeQuery();
+            if (r.next()) {
+                result[0] = r.getShort(1);
+                result[1] = r.getShort(2);
+            }
+        } catch (SQLException exc) {
+            log.error("Unable to get interval counters", exc);
+            throw new WalletException("Unable to get interval counters");
+        }
+        return result;
+    }
+
+    /**
+     * Set the current and previous interval counters
+     *
+     * The interval counters are used to track soft fork activation as defined in BIP 9
+     *
+     * @param       currentInterval     Current interval counter
+     * @param       prevInterval        Previous interval counter
+     * @throws      WalletException     Unable to store the interval counters
+     */
+    @Override
+    public void setIntervalCounters(int currentInterval, int prevInterval) throws WalletException {
+        Connection conn = getConnection();
+        try (PreparedStatement s = conn.prepareStatement("UPDATE Settings SET current_interval=?,previous_interval=?")) {
+            s.setShort(1, (short)currentInterval);
+            s.setShort(2, (short)prevInterval);
+            s.executeUpdate();
+        } catch (SQLException exc) {
+            log.error("Unable to set interval counters", exc);
+            throw new WalletException("Unable to set interval counters");
         }
     }
 
@@ -856,6 +935,35 @@ public class WalletSql extends Wallet {
             throw new WalletException("Unable to get block header");
         }
         return header;
+    }
+
+    /**
+     * * Return the block versions for the interval containing the supplied block
+     *
+     * An interval consists of 2106 blocks
+     *
+     * @param       height              Block height
+     * @return                          Version list from the interval start to the supplied height
+     * @throws      WalletException     Unable to retrieve the block versions
+     */
+    @Override
+    public List<Integer> getBlockVersions(int height) throws WalletException {
+        int baseHeight = (height / 2106) * 2106;
+        List<Integer> versions = new ArrayList<>(height - baseHeight + 1);
+        Connection conn = getConnection();
+        try (PreparedStatement s = conn.prepareStatement("SELECT version FROM Headers "
+                + "WHERE block_height>=? AND block_height<=? ORDER BY block_height ASC")) {
+            s.setInt(1, baseHeight);
+            s.setInt(2, height);
+            ResultSet r = s.executeQuery();
+            while (r.next()) {
+                versions.add(r.getInt(1));
+            }
+        } catch (SQLException exc) {
+            log.error("Unable to get block versions", exc);
+            throw new WalletException("Unable to get block versions");
+        }
+        return versions;
     }
 
     /**

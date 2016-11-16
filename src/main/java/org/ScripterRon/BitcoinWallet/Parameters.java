@@ -118,4 +118,13 @@ public class Parameters {
 
     /** Wallet passphrase */
     public static String passPhrase;
+
+    /** Segregated Witness activated */
+    public static Boolean witnessActivated;
+
+    /** Current interval counter */
+    public static int currentIntervalCounter;
+
+    /** Previous interval counter */
+    public static int prevIntervalCounter;
 }

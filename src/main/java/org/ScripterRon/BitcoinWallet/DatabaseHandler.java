@@ -45,6 +45,18 @@ import org.ScripterRon.BitcoinCore.Script;
  */
 public class DatabaseHandler implements Runnable {
 
+    /** Segregated Witness soft fork flag (BIP 9 and BIP 141) */
+    private static final int witnessFlag = 2;
+
+    /** Segregated Witness enable time (November 15, 2016) */
+    private static final long witnessEnable = 1479168;
+
+    /** Segregated Witness timeout (November 15, 2017) */
+    private static final long witnessTimeout = 1510704;
+
+    /** Segregated Witness consensus */
+    private static final long witnessConsensus = (2106*95)/100;
+
     /** Database handler thread */
     private Thread handlerThread;
 
@@ -153,6 +165,7 @@ public class DatabaseHandler implements Runnable {
      */
     private void processBlock(StoredHeader blockHeader) {
         Sha256Hash blockHash = blockHeader.getHash();
+        boolean recalculateIntervals = false;
         try {
             //
             // Update the transaction map with the new transactions.  This allows us to
@@ -178,8 +191,10 @@ public class DatabaseHandler implements Runnable {
                 // and update the chain
                 //
                 Parameters.wallet.storeHeader(blockHeader);
+                Sha256Hash currentChainHead = Parameters.wallet.getChainHead();
                 updateChain(blockHeader);
                 if (blockHeader.isOnChain()) {
+                    recalculateIntervals = updateSoftFork(currentChainHead, blockHeader);
                     Sha256Hash parentHash = blockHash;
                     while (parentHash != null)
                         parentHash = processChildBlock(parentHash);
@@ -214,14 +229,39 @@ public class DatabaseHandler implements Runnable {
                     //
                     StoredHeader chkHeader = Parameters.wallet.getHeader(blockHash);
                     if (!chkHeader.isOnChain()) {
+                        Sha256Hash currentChainHead = Parameters.wallet.getChainHead();
                         updateChain(blockHeader);
                         if (blockHeader.isOnChain()) {
+                            recalculateIntervals = updateSoftFork(currentChainHead, blockHeader);
                             Sha256Hash parentHash = blockHash;
                             while (parentHash != null)
                                 parentHash = processChildBlock(parentHash);
                         }
                     }
                 }
+            }
+            //
+            // Recalculate the soft fork intervals
+            //
+            if (recalculateIntervals) {
+                log.debug("Recalculating the soft fork intervals");
+                int chainHeight = Parameters.wallet.getChainHeight();
+                List<Integer> versions = Parameters.wallet.getBlockVersions(chainHeight);
+                Parameters.currentIntervalCounter = 0;
+                versions.forEach((version) -> {
+                    if ((version&BlockHeader.VERSION_MASK) == BlockHeader.VERSION_BIP9 &&
+                            (version&witnessFlag) != 0) {
+                        Parameters.currentIntervalCounter++;
+                    }
+                });
+                versions = Parameters.wallet.getBlockVersions((chainHeight / 2106) * 2106 - 1);
+                Parameters.prevIntervalCounter = 0;
+                versions.forEach((version) -> {
+                    if ((version&BlockHeader.VERSION_MASK) == BlockHeader.VERSION_BIP9 &&
+                            (version&witnessFlag) != 0) {
+                        Parameters.prevIntervalCounter++;
+                    }
+                });
             }
         } catch (BlockNotFoundException exc) {
             PeerRequest request = new PeerRequest(exc.getHash(), InventoryItem.INV_FILTERED_BLOCK);
@@ -299,10 +339,47 @@ public class DatabaseHandler implements Runnable {
         StoredHeader childHeader = Parameters.wallet.getChildHeader(parentHash);
         if (childHeader != null && !childHeader.isOnChain()) {
             updateChain(childHeader);
-            if (childHeader.isOnChain())
+            if (childHeader.isOnChain()) {
+                updateSoftFork(parentHash, childHeader);
                 nextParent = childHeader.getHash();
+            }
         }
         return nextParent;
+    }
+
+    /**
+     * Update the soft fork interval counts
+     *
+     * @param       chainHead           The previous chain head
+     * @param       header              Block added to chain
+     * @return                          TRUE if the interval counters need to be recalculated
+     * @throws      WalletException     Unable to update interval counters
+     */
+    private boolean updateSoftFork(Sha256Hash chainHead, StoredHeader blockHeader) throws WalletException {
+        //
+        // Check Segregated Witness activation
+        //
+        if (Parameters.witnessActivated ||
+                blockHeader.getBlockTime() < witnessEnable || blockHeader.getBlockTime() > witnessTimeout)
+            return false;
+        if (!blockHeader.getPrevHash().equals(chainHead))
+            return true;
+        int height = blockHeader.getBlockHeight();
+        if (height%2106 == 0) {
+            Parameters.prevIntervalCounter = Parameters.currentIntervalCounter;
+            Parameters.currentIntervalCounter = 0;
+        }
+        int version = blockHeader.getVersion();
+        if ((version&BlockHeader.VERSION_MASK) == BlockHeader.VERSION_BIP9 && ((version&witnessFlag) != 0)) {
+            Parameters.currentIntervalCounter++;
+        }
+        Parameters.wallet.setIntervalCounters(Parameters.currentIntervalCounter, Parameters.prevIntervalCounter);
+        if (Parameters.prevIntervalCounter >= witnessConsensus && Parameters.currentIntervalCounter >= witnessConsensus) {
+            Parameters.witnessActivated = true;
+            Parameters.wallet.activateWitness();
+            log.info("Segregated Witness has been activated");
+        }
+        return false;
     }
 
     /**
