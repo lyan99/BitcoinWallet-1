@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2016 Ronald W Hoffman
+ * Copyright 2013-2017 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import javax.swing.Box;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 
 /**
@@ -130,10 +134,11 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         //
         // Add the "Tools" menu to the menu bar
         //
-        // The "Tools" menu contains "Export Keys", "Import Keys" and "Rescan Block Chain"
+        // The "Tools" menu contains "Export Keys", "Import Keys", "Import Key" and "Rescan Block Chain"
         //
-        menuBar.add(new Menu(this, "Tools", new String[] {"Export Keys", "export keys"},
-                                            new String[] {"Import Keys", "import keys"},
+        menuBar.add(new Menu(this, "Tools", new String[] {"Import Key", "import key"},
+                                            new String[] {"Import Keys From File", "import keys"},
+                                            new String[] {"Export Keys To File", "export keys"},
                                             new String[] {"Rescan Block Chain", "rescan"}));
         //
         // Add the "Help" menu to the menu bar
@@ -283,8 +288,9 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         //
         // "about"              - Display information about this program
         // "exit"               - Exit the program
-        // "export keys"        - Export private keys
-        // "import keys"        - Import private keys
+        // "export keys"        - Export private keys to a text file
+        // "import key"         - Import a single private key from the terminal
+        // "import keys"        - Import private keys from a text file
         // "rescan"             - Rescan the block chain
         // "send coins"         - Send coins to a bitcoin address
         // "sign message"       - Sign message
@@ -328,6 +334,9 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
                 case "import keys":
                     importPrivateKeys();
                     break;
+                case "import key":
+                    importPrivateKey();
+                    break;
                 case "rescan":
                     rescan();
                     break;
@@ -344,7 +353,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
     }
 
     /**
-     * Export keys as Base58-encoded strings (compatible with the Bitcoin-Qt client)
+     * Export keys as Base58-encoded strings (compatible with the Bitcoin-Qt client) to "BitcoinWallet.keys"
      *
      * The keys will be written to the BitcoinWallet.keys file in the following format:
      *   Label: <text>
@@ -384,7 +393,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
     }
 
     /**
-     * Import private keys
+     * Import private keys from "BitcoinWallet.keys"
      *
      * The keys will be read from the BitcoinWallet.keys file.  The keys must be in the format created by
      * exportPrivateKeys().  Blank lines and lines beginning with '#' will be ignored.  Lines containing
@@ -493,6 +502,70 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         }
         JOptionPane.showMessageDialog(this, "Keys imported from BitcoinWallet.keys", "Keys Imported",
                                       JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    /**
+     * Import a private key from the terminal
+     * 
+     * @throws      AddressFormatException      Address format is not valid
+     * @throws      WalletException             Unable to update database
+     */
+    private void importPrivateKey() throws AddressFormatException, WalletException {
+        String encodedPrivateKey;
+        String label;
+        //
+        // Get the private key and associated label
+        //
+        JTextField labelField = new JTextField("", 32);
+        JTextField keyField = new JTextField("", 34);
+        JPanel panel = new JPanel();
+        panel.add(new JLabel("Label: "));
+        panel.add(labelField);
+        panel.add(Box.createHorizontalStrut(15));
+        panel.add(new JLabel("Private key: "));
+        panel.add(keyField);
+        while (true) {
+            int opt = JOptionPane.showConfirmDialog(this, panel, "Import Key", JOptionPane.OK_CANCEL_OPTION);
+            if (opt != JOptionPane.OK_OPTION)
+                return;
+            label = labelField.getText();
+            if (label == null || label.length() ==0) {
+                JOptionPane.showMessageDialog(this, "You must enter a label", "Label Missing",
+                                                JOptionPane.ERROR_MESSAGE);
+                continue;
+            }
+            encodedPrivateKey = keyField.getText();
+            if (encodedPrivateKey == null || encodedPrivateKey.length() == 0) {
+                JOptionPane.showMessageDialog(this, "You must enter the private key", "Key Missin",
+                                                JOptionPane.ERROR_MESSAGE);
+                continue;
+            }
+            break;
+        }
+        //
+        // Import the private key
+        //
+        DumpedPrivateKey dumpedKey = new DumpedPrivateKey(encodedPrivateKey);
+        ECKey key = dumpedKey.getKey();
+        key.setLabel(label);
+        if (!Parameters.keys.contains(key)) {
+            Parameters.wallet.storeKey(key);
+            synchronized(Parameters.lock) {
+                boolean added = false;
+                for (int i=0; i<Parameters.keys.size(); i++) {
+                    if (Parameters.keys.get(i).getLabel().compareToIgnoreCase(label) > 0) {
+                        Parameters.keys.add(i, key);
+                        added = true;
+                        break;
+                    }
+                }
+                if (!added)
+                    Parameters.keys.add(key);
+                Parameters.bloomFilter.insert(key.getPubKey());
+                Parameters.bloomFilter.insert(key.getPubKeyHash());
+            }
+        }
+        JOptionPane.showMessageDialog(this, "'" + label + "' imported", "Key Imported", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
