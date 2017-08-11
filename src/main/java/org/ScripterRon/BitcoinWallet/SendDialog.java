@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2016 Ronald W Hoffman
+ * Copyright 2013-2017 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -64,6 +65,9 @@ public class SendDialog extends JDialog implements ActionListener {
 
     /** Fee field */
     private final JTextField feeField;
+    
+    /** Coin control field */
+    private final JCheckBox coinControlField;
 
     /** Send sendAddress */
     private Address sendAddress;
@@ -73,6 +77,24 @@ public class SendDialog extends JDialog implements ActionListener {
 
     /** Send fee */
     private BigInteger sendFee;
+    
+    /** Calculated fee */
+    private BigInteger totalFee;
+    
+    /** Coin control */
+    private boolean coinControl;
+    
+    /** KByte to Byte conversion */
+    private final BigInteger convertToByteFee = new BigInteger("1000");
+    
+    /** Minimum transaction size (segregated witness with 1 input and 2 outputs) */
+    private final BigInteger minimumTxSize = new BigInteger("249");
+    
+    /** Base transaction size (segregated witness with 2 outputs) */
+    private final BigInteger baseTxSize = new BigInteger("78");
+    
+    /** Transaction input size (segregated witness) */
+    private final BigInteger inputSize = new BigInteger("171");
 
     /**
      * Create the dialog
@@ -104,9 +126,11 @@ public class SendDialog extends JDialog implements ActionListener {
         // Create the amount field
         //
         amountField = new JTextField("", 15);
+        coinControlField = new JCheckBox("Coin control", false);
         JPanel amountPane = new JPanel();
         amountPane.add(new JLabel("Amount  ", JLabel.RIGHT));
         amountPane.add(amountField);
+        amountPane.add(coinControlField);
         //
         // Create the fee field
         //
@@ -116,7 +140,7 @@ public class SendDialog extends JDialog implements ActionListener {
         }
         feeField = new JTextField(feeString, 10);
         JPanel feePane = new JPanel();
-        feePane.add(new JLabel("Fee  ", JLabel.RIGHT));
+        feePane.add(new JLabel("Fee per KByte  ", JLabel.RIGHT));
         feePane.add(feeField);
         //
         // Create the buttons (Send, Done)
@@ -172,12 +196,7 @@ public class SendDialog extends JDialog implements ActionListener {
             switch (action) {
                 case "send":
                     if (checkFields()) {
-                        String confirmText = String.format("Do you want to send %s BTC?",
-                                                           Main.satoshiToString(sendAmount));
-                        if (JOptionPane.showConfirmDialog(this, confirmText, "Send Coins", JOptionPane.YES_NO_OPTION,
-                                                          JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
-                            sendCoins();
-                        }
+                        sendCoins();
                     }
                     break;
                 case "done":
@@ -239,6 +258,7 @@ public class SendDialog extends JDialog implements ActionListener {
                                                               "ERROR", JOptionPane.ERROR_MESSAGE);
             return false;
         }
+        coinControl = coinControlField.isSelected();
         //
         // Get the fee amount
         //
@@ -248,10 +268,10 @@ public class SendDialog extends JDialog implements ActionListener {
                                           JOptionPane.ERROR_MESSAGE);
             return false;
         }
-        sendFee = Main.stringToSatoshi(feeString);
-        if (sendFee.compareTo(Parameters.MIN_TX_FEE) < 0) {
-            JOptionPane.showMessageDialog(this, String.format("The minimun transaction fee is %s BTC",
-                                                              Main.satoshiToString(Parameters.MIN_TX_FEE)),
+        sendFee = Main.stringToSatoshi(feeString).divide(convertToByteFee);
+        if (sendFee.multiply(minimumTxSize).compareTo(Parameters.MIN_TX_FEE) < 0) {
+            JOptionPane.showMessageDialog(this, String.format("The minimun transaction fee is %s BTC/KByte",
+                                                              Main.satoshiToString(Parameters.MIN_TX_FEE.divide(minimumTxSize).add(BigInteger.ONE))),
                                                               "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
@@ -268,64 +288,75 @@ public class SendDialog extends JDialog implements ActionListener {
         //
         // Get the list of available inputs
         //
-        List<SignedInput> inputList = BuildInputList.buildSignedInputs();
+        List<SignedInput> inputList = BuildInputList.buildSignedInputs(coinControl);
         //
         // Build the new transaction
         //
+        // P2PKH: Transaction size is 10 + inputs + outputs (minimum size 222)
+        // P2WSH: Transaction size is 12 + inputs + outputs + witness (minimum size 249)
+        //
+        // We will assume a segregated witness transaction when calculating the fee since
+        // the calculated fee will be large enough for both types of transactions.  
+        // The base fee assumes two outputs.
+        // Each input consists of just the redeem script (23 bytes).
+        // Each witness data contains the signature and the public key (108 bytes).
+        //
         Transaction tx = null;
-        while (true) {
-            BigInteger totalAmount = sendAmount.add(sendFee);
-            List<SignedInput> inputs = new ArrayList<>(inputList.size());
-            for (SignedInput input : inputList) {
-                inputs.add(input);
-                totalAmount = totalAmount.subtract(input.getValue());
-                if (totalAmount.signum() <= 0)
-                    break;
-            }
-            if (totalAmount.signum() > 0) {
-                JOptionPane.showMessageDialog(this, "There are not enough confirmed coins available",
-                                              "Error", JOptionPane.ERROR_MESSAGE);
+        totalFee = baseTxSize.multiply(sendFee);
+        BigInteger totalAmount = sendAmount.add(totalFee);
+        List<SignedInput> inputs = new ArrayList<>(inputList.size());
+        for (SignedInput input : inputList) {
+            inputs.add(input);
+            BigInteger feeIncrement = inputSize.multiply(sendFee);
+            totalFee = totalFee.add(feeIncrement);
+            totalAmount = totalAmount.subtract(input.getValue()).add(feeIncrement);
+            if (totalAmount.signum() <= 0)
                 break;
-            }
-            List<TransactionOutput> outputs = new ArrayList<>(2);
-            outputs.add(new TransactionOutput(0, sendAmount, sendAddress));
-            BigInteger change = totalAmount.negate();
-            if (change.compareTo(Parameters.DUST_TRANSACTION) > 0) {
-                Address.AddressType type = sendAddress.getType();
-                byte[] hash = (type==Address.AddressType.P2SH ?
-                        Parameters.changeKey.getScriptHash() : Parameters.changeKey.getPubKeyHash());
-                outputs.add(new TransactionOutput(1, change, new Address(type, hash)));
-            }
-            //
-            // Create the new transaction using the supplied inputs and outputs
-            //
-            try {
-                tx = new Transaction(inputs, outputs, Parameters.wallet.getChainHeight());
-            } catch (ECException | ScriptException | VerificationException exc) {
-                throw new WalletException("Unable to create transaction", exc);
-            }
-            //
-            // The minimum fee increases for every 1000 bytes of serialized transaction data.  We
-            // will need to increase the send fee if it doesn't cover the minimum fee.
-            //
-            int length = tx.getBytes().length;
-            BigInteger minFee = BigInteger.valueOf(length/1000+1).multiply(Parameters.MIN_TX_FEE);
-            if (minFee.compareTo(sendFee) <= 0)
-                break;
-            sendFee = minFee;
-            tx = null;
+        }
+        if (totalAmount.signum() > 0) {
+            JOptionPane.showMessageDialog(this, "There are not enough coins available",
+                                          "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        List<TransactionOutput> outputs = new ArrayList<>(2);
+        outputs.add(new TransactionOutput(0, sendAmount, sendAddress));
+        //
+        // Ignore the change if it will create a dust transaction.  Otherwise, add the change output.
+        //
+        BigInteger change = totalAmount.negate();
+        if (change.compareTo(Parameters.DUST_TRANSACTION) > 0) {
+            Address.AddressType type = sendAddress.getType();
+            byte[] hash = (type==Address.AddressType.P2SH ?
+                    Parameters.changeKey.getScriptHash() : Parameters.changeKey.getPubKeyHash());
+            outputs.add(new TransactionOutput(1, change, new Address(type, hash)));
+        }
+        //
+        // Confirm the send request
+        //
+        String confirmText = String.format("Do you want to send %s BTC with fee %s BTC?",
+                                                           Main.satoshiToString(sendAmount),
+                                                           Main.satoshiToString(totalFee));
+        if (JOptionPane.showConfirmDialog(this, confirmText, "Send Coins", JOptionPane.YES_NO_OPTION,
+                                          JOptionPane.QUESTION_MESSAGE) != JOptionPane.YES_OPTION) {
+            return;
+        }
+        //
+        // Create the new transaction using the supplied inputs and outputs
+        //
+        try {
+            tx = new Transaction(inputs, outputs, Parameters.wallet.getChainHeight());
+        } catch (ECException | ScriptException | VerificationException exc) {
+            throw new WalletException("Unable to create transaction", exc);
         }
         //
         // Store the new transaction in the database and broadcast it to our peers
         //
-        if (tx != null) {
-            Parameters.databaseHandler.processTransaction(tx);
-            List<InventoryItem> invList = new ArrayList<>(1);
-            invList.add(new InventoryItem(InventoryItem.INV_TX, tx.getHash()));
-            Message invMsg = InventoryMessage.buildInventoryMessage(null, invList);
-            Parameters.networkHandler.broadcastMessage(invMsg);
-            JOptionPane.showMessageDialog(this, String.format("Transaction broadcast to peer nodes\n%s",
-                                          tx.getHash()), "Transaction Broadcast", JOptionPane.INFORMATION_MESSAGE);
-        }
+        Parameters.databaseHandler.processTransaction(tx);
+        List<InventoryItem> invList = new ArrayList<>(1);
+        invList.add(new InventoryItem(InventoryItem.INV_TX, tx.getHash()));
+        Message invMsg = InventoryMessage.buildInventoryMessage(null, invList);
+        Parameters.networkHandler.broadcastMessage(invMsg);
+        JOptionPane.showMessageDialog(this, String.format("Transaction broadcast to peer nodes\n%s",
+                                      tx.getHash()), "Transaction Broadcast", JOptionPane.INFORMATION_MESSAGE);
     }
 }
