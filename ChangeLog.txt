@@ -5,4 +5,5 @@ BitcoinWallet Version 3.1.0
   - Segregated Witness support (BIP 141, BIP 143, BIP 144)
   - Add 'Import Key' option to import a single key from the terminal
   - Calculate transaction fee based on transaction size
+  - Select segregated witness outputs during coin selection
 

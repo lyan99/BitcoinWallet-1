@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Ronald W Hoffman
+ * Copyright 2013-2017 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,10 @@
  */
 package org.ScripterRon.BitcoinWallet;
 
-import org.ScripterRon.BitcoinCore.Address;
 import org.ScripterRon.BitcoinCore.ECKey;
 import org.ScripterRon.BitcoinCore.OutPoint;
+import org.ScripterRon.BitcoinCore.Script;
+import org.ScripterRon.BitcoinCore.ScriptOpCodes;
 import org.ScripterRon.BitcoinCore.SignedInput;
 
 import java.util.Arrays;
@@ -36,10 +37,11 @@ public class BuildInputList {
      * include pending transactions, spent transactions or transactions in the safe.
      * A coinbase transaction must be mature before it can be spent.
      *
+     * @param       coinControl         TRUE to use coin control
      * @return                          Signed input list
      * @throws      WalletException     Unable to get list of unspent outputs
      */
-    public static List<SignedInput> buildSignedInputs() throws WalletException {
+    public static List<SignedInput> buildSignedInputs(boolean coinControl) throws WalletException {
         List<SignedInput> inputList = new LinkedList<>();
         //
         // Get the list of available transaction outputs
@@ -67,12 +69,28 @@ public class BuildInputList {
         // Build the list of signed inputs
         //
         for (ReceiveTransaction rcvTx : txList) {
-            Address outAddress = rcvTx.getAddress();
+            byte[] scriptBytes = rcvTx.getScriptBytes();
             ECKey key = null;
-            for (ECKey chkKey : Parameters.keys) {
-                if (Arrays.equals(chkKey.getPubKeyHash(), outAddress.getHash())) {
-                    key = chkKey;
-                    break;
+            int paymentType = Script.getPaymentType(scriptBytes);
+            if (paymentType == ScriptOpCodes.PAY_TO_PUBKEY_HASH) {
+                byte[] pubKeyHash = Arrays.copyOfRange(scriptBytes, 3, 23);
+                synchronized(Parameters.lock) {
+                    for (ECKey chkKey : Parameters.keys) {
+                        if (Arrays.equals(chkKey.getPubKeyHash(), pubKeyHash)) {
+                            key = chkKey;
+                            break;
+                        }
+                    }
+                }
+            } else if (paymentType == ScriptOpCodes.PAY_TO_SCRIPT_HASH) {    
+                byte[] scriptHash = Arrays.copyOfRange(scriptBytes, 2, 22);
+                synchronized(Parameters.lock) {
+                    for (ECKey chkKey : Parameters.keys) {
+                        if (Arrays.equals(chkKey.getScriptHash(), scriptHash)) {
+                            key = chkKey;
+                            break;
+                        }
+                    }
                 }
             }
             if (key == null)
