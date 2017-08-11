@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2016 Ronald W Hoffman
+ * Copyright 2013-2017 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ public final class SizedTable extends JTable {
 
     /** Bitcoin address */
     public static final int ADDRESS = 6;
+    
+    /** Selection column */
+    public static final int SELECTED = 7;
 
     /**
      * Create a new sized table
@@ -107,6 +110,11 @@ public final class SizedTable extends JTable {
                     value = "0123456789AbCdEfGhIjKlMnOpQrStUvWx";
                     break;
 
+                case SELECTED:                                     // 1 character
+                    column.setCellRenderer(new StringRenderer(JLabel.CENTER));
+                    value = "x";
+                    break;
+                    
                 default:
                     throw new IllegalArgumentException("Unsupported column type "+columnTypes[i]);
             }

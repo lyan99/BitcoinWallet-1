@@ -100,6 +100,12 @@ public class BuildInputList {
             SignedInput input = new SignedInput(key, outPoint, rcvTx.getValue(), rcvTx.getScriptBytes());
             inputList.add(input);
         }
+        //
+        // Select coins if coin control specified
+        //
+        if (coinControl) {
+            CoinControlDialog.showDialog(Main.mainWindow, inputList);
+        }
         return inputList;
     }
 }
