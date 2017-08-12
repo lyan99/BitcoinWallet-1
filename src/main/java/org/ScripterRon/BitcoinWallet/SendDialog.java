@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package org.ScripterRon.BitcoinWallet;
+import static org.ScripterRon.BitcoinWallet.Main.log;
 
 import org.ScripterRon.BitcoinCore.Address;
 import org.ScripterRon.BitcoinCore.AddressFormatException;
@@ -297,6 +298,7 @@ public class SendDialog extends JDialog implements ActionListener {
         //
         // We will assume a segregated witness transaction when calculating the fee since
         // the calculated fee will be large enough for both types of transactions.  
+        //
         // The base fee assumes two outputs.
         // Each input consists of just the redeem script (23 bytes).
         // Each witness data contains the signature and the public key (108 bytes).
@@ -320,6 +322,7 @@ public class SendDialog extends JDialog implements ActionListener {
         }
         List<TransactionOutput> outputs = new ArrayList<>(2);
         outputs.add(new TransactionOutput(0, sendAmount, sendAddress));
+        log.debug("Transaction output: " + Main.satoshiToString(sendAmount) + " BTC");
         //
         // Ignore the change if it will create a dust transaction.  Otherwise, add the change output.
         //
@@ -329,6 +332,9 @@ public class SendDialog extends JDialog implements ActionListener {
             byte[] hash = (type==Address.AddressType.P2SH ?
                     Parameters.changeKey.getScriptHash() : Parameters.changeKey.getPubKeyHash());
             outputs.add(new TransactionOutput(1, change, new Address(type, hash)));
+            log.debug("Change output: " + Main.satoshiToString(change) + " BTC");
+        } else {
+            log.debug("Change output omitted");
         }
         //
         // Confirm the send request
