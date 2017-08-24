@@ -388,13 +388,11 @@ public abstract class Wallet {
     public abstract int getTxDepth(Sha256Hash txHash) throws WalletException;
 
     /**
-     * Deletes all transactions later than the rescan time.  Transactions that are not
-     * in a block will not be deleted.
+     * Deletes all wallet transactions.
      *
-     * @param       rescanTime              Rescan time in seconds
      * @throws      WalletException         Unable to delete transactions
      */
-    public abstract void deleteTransactions(long rescanTime) throws WalletException;
+    public abstract void deleteTransactions() throws WalletException;
 
     /**
      * Locates the junction where the chain represented by the specified block joins

@@ -8,4 +8,5 @@ BitcoinWallet Version 3.1.0
   - Select segregated witness outputs during coin selection
   - Add coin selection
   - Segregated witness has activated
+  - Delete all wallet transactions when rescanning block chain
 

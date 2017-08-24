@@ -1360,26 +1360,19 @@ public class WalletSql extends Wallet {
     }
 
     /**
-     * Deletes all transactions later than the rescan time.  Transactions that are not
-     * in a block will not be deleted.
+     * Deletes all wallet transactions.
      *
-     * @param       rescanTime              Rescan time in seconds
      * @throws      WalletException         Unable to delete transactions
      */
     @Override
-    public void deleteTransactions(long rescanTime) throws WalletException {
+    public void deleteTransactions() throws WalletException {
         Connection conn = getConnection();
-        try (PreparedStatement s1 = conn.prepareStatement("DELETE FROM Received "
-                            + "WHERE timestamp>=? AND block_hash IS NOT NULL");
-                PreparedStatement s2 = conn.prepareStatement("DELETE FROM Sent "
-                            + "WHERE timestamp>=? AND block_hash IS NOT NULL")) {
-            s1.setLong(1, rescanTime);
-            s1.executeUpdate();
-            s2.setLong(1, rescanTime);
-            s2.executeUpdate();
+        try (Statement s1 = conn.createStatement()) {
+            s1.execute("TRUNCATE TABLE Received");
+            s1.execute("TRUNCATE TABLE Sent");
         } catch (SQLException exc) {
-            log.error("Unable to delete rescan transactions", exc);
-            throw new WalletException("Unable to delete rescan transactions");
+            log.error("Unable to delete wallet transactions", exc);
+            throw new WalletException("Unable to delete wallet transactions");
         }
     }
 

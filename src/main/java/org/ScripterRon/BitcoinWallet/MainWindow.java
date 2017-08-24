@@ -589,7 +589,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         //
         // Delete existing transactions
         //
-        Parameters.wallet.deleteTransactions(creationTime);
+        Parameters.wallet.deleteTransactions();
         transactionPanel.walletChanged();
         //
         // Initiate a block chain rescan
