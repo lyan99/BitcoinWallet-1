@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 Ronald Hoffman.
+ * Copyright 2014-2017 Ronald Hoffman.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,10 +54,7 @@ public class WalletSql extends Wallet {
     /** Settings table definition */
     private static final String Settings_Table = "CREATE TABLE IF NOT EXISTS Settings ("
             + "schema_name          VARCHAR(32) NOT NULL,"          // Database schema name
-            + "schema_version       SMALLINT NOT NULL,"             // Database schema version
-            + "witness_activated    BOOLEAN,"                       // Segregated Witness activated
-            + "previous_interval    SMALLINT,"                      // Previous interval counter
-            + "current_interval     SMALLINT)";                     // Current interval counter
+            + "schema_version       SMALLINT NOT NULL)";            // Database schema version
 
     /** Headers table definitions */
     private static final String Headers_Table = "CREATE TABLE IF NOT EXISTS Headers ("
@@ -133,13 +130,13 @@ public class WalletSql extends Wallet {
     public static final String schemaName = "BitcoinWallet Block Store";
 
     /** Database schema version */
-    public static final int schemaVersion = 103;
+    public static final int schemaVersion = 104;
 
     /** Per-thread database connection */
     private final ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
 
     /** List of all database connections */
-    private final List<Connection> allConnections = Collections.synchronizedList(new ArrayList<Connection>());
+    private final List<Connection> allConnections = Collections.synchronizedList(new ArrayList<>());
 
     /** Database connection URL */
     private final String connectionURL;
@@ -434,20 +431,14 @@ public class WalletSql extends Wallet {
                     s.executeUpdate("ALTER TABLE Settings ADD COLUMN IF NOT EXISTS witness_activated BOOLEAN");
                     s.executeUpdate("ALTER TABLE Settings ADD COLUMN IF NOT EXISTS previous_interval SMALLINT");
                     s.executeUpdate("ALTER TABLE Settings ADD COLUMN IF NOT EXISTS current_interval SMALLINT");
+                case 103:
+                    s.executeUpdate("ALTER TABLE Settings DROP COLUMN IF EXISTS witness_activated");
+                    s.executeUpdate("ALTER TABLE Settings DROP COLUMN IF EXISTS previous_interval");
+                    s.executeUpdate("ALTER TABLE Settings DROP COLUMN IF EXISTS current_interval");
                     //
                     // Insert new version updates before this comment
                     //
                     s.executeUpdate("UPDATE Settings SET schema_version=" + schemaVersion);
-            }
-            //
-            // Get the current soft fork values
-            //
-            r = s.executeQuery("SELECT witness_activated,current_interval,previous_interval FROM Settings");
-            if (r.next()) {
-                Parameters.witnessActivated = r.getBoolean(1);
-                Parameters.currentIntervalCounter = r.getShort(2);
-                Parameters.prevIntervalCounter = r.getShort(3);
-                log.info("Segregated Witness is" + (Parameters.witnessActivated ? " " : " not ") + "activated");
             }
             //
             // Get the current chain values from the chain head block
@@ -470,21 +461,6 @@ public class WalletSql extends Wallet {
         } catch (SQLException exc) {
             log.error("Unable to get initial table settings", exc);
             throw new WalletException("Unable to get initial table settings");
-        }
-    }
-
-    /**
-     * Activate segregated witness
-     *
-     * @throws      WalletException     Unable to set activation flag
-     */
-    @Override
-    public void activateWitness() throws WalletException {
-        Connection conn = getConnection();
-        try (PreparedStatement s = conn.prepareStatement("UPDATE Settings SET witness_activated=TRUE")) {
-        } catch (SQLException exc) {
-            log.error("Unable to activate Segregated Witness", exc);
-            throw new WalletException("Unable to activate Segregated Witness");
         }
     }
 

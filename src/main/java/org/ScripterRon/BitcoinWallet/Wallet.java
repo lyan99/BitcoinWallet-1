@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2016 Ronald W Hoffman
+ * Copyright 2013-2017 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,13 +149,6 @@ public abstract class Wallet {
      * @throws      WalletException     Unable to get blocks from database
      */
     public abstract List<Sha256Hash> getChainList(int startHeight, Sha256Hash stopBlock) throws WalletException;
-
-    /**
-     * Activate segregated witness
-     *
-     * @throws      WalletException     Unable to set activation flag
-     */
-    public abstract void activateWitness() throws WalletException;
 
     /**
      * Return the current and previous interval counters

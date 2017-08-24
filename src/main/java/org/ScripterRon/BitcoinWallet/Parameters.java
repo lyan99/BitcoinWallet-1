@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2016 Ronald W Hoffman
+ * Copyright 2013-2017 Ronald W Hoffman
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,13 +118,4 @@ public class Parameters {
 
     /** Wallet passphrase */
     public static String passPhrase;
-
-    /** Segregated Witness activated */
-    public static Boolean witnessActivated;
-
-    /** Current interval counter */
-    public static int currentIntervalCounter;
-
-    /** Previous interval counter */
-    public static int prevIntervalCounter;
 }

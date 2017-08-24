@@ -238,11 +238,6 @@ public class SendDialog extends JDialog implements ActionListener {
             sendAddress = new Address(sendString);
         else
             sendAddress = Parameters.addresses.get(index);
-        if (sendAddress.getType() == Address.AddressType.P2SH && !Parameters.witnessActivated) {
-            JOptionPane.showMessageDialog(this, "Segregated Witness is not activated yet",
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
         //
         // Get the send amount
         //
