@@ -35,6 +35,7 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -120,9 +121,13 @@ public class SendDialog extends JDialog implements ActionListener {
         addressField.setEditable(true);
         addressField.setSelectedIndex(-1);
         addressField.setPreferredSize(new Dimension(340, 25));
+        JButton scanButton = new JButton("Scan QR code");
+        scanButton.setActionCommand("scan");
+        scanButton.addActionListener(this);
         JPanel addressPane = new JPanel();
         addressPane.add(new JLabel("Address  ", JLabel.RIGHT));
         addressPane.add(addressField);
+        addressPane.add(scanButton);
         //
         // Create the amount field
         //
@@ -189,12 +194,26 @@ public class SendDialog extends JDialog implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent ae) {
         //
+        // "scan"   - Scan QR code
         // "send"   - Send coins
         // "done"   - All done
         //
         try {
             String action = ae.getActionCommand();
             switch (action) {
+                case "scan":
+                    String result = ScanDialog.showDialog(this);
+                    if (result != null) {
+                        String[] codes = result.split("\\?");
+                        for (String code : codes) {
+                            if (code.startsWith("bitcoin:")) {
+                                addressField.setSelectedItem(code.substring(8));
+                            } else if (code.startsWith("amount=")) {
+                                amountField.setText(code.substring(7));
+                            }
+                        }
+                    }
+                    break;
                 case "send":
                     if (checkFields()) {
                         sendCoins();

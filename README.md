@@ -3,13 +3,15 @@ BitcoinWallet
 
 BitcoinWallet is a Simple Payment Verification (SPV) Bitcoin wallet written in Java.  It allows you to send and receive coins using Pay-To-Pubkey-Hash payments.  It has a 'wallet' and a 'safe'.  The safe contains coins that are not to be spent until they are moved to the wallet.  It uses a single change address because I'm not worried about being anonymous on the network and don't want to take a chance on losing coins because I forgot to back up the wallet after making a transaction.  
 
-BitcoinWallet supports two address format.  A P2PKH address starts with '1' while a P2SH address starts with '3'.  BitcoinWallet supports just a P2SH-P2WPKH acript when using a P2SH address.  Refer to BIP 143 for more information on witness scripts.
+BitcoinWallet supports two address formats.  A P2PKH address starts with '1' while a P2SH address starts with '3'.  BitcoinWallet supports just a P2SH-P2WPKH acript when using a P2SH address.  Refer to BIP 143 for more information on witness scripts.
 
 Bloom filters are used to reduce the amount of data sent to the wallet from the peer nodes.  This means that BitcoinWallet will only connect to nodes that support bloom filters (NODE_BLOOM is set in the node services).
 
 A segregated witness transaction is created if a P2SH-P2WSH output is spent or coins are sent to a P2SH-P2WSH address.  Otherwse, a non-segregated witness transaction is created.  This means that BitcoinWallet will only connect to nodes that support segregated witness (NODE_WITNESS is set in the node services) since transaction verification will fail if a segregated witness transaction is sent to a node that doesn't support segregated witness.
 
 You can use the production network (PROD) or the regression test network (TEST).  The regression test network is useful because bitcoind will immediately generate a specified number of blocks.  To use the regression test network, start bitcoind with the -regtest option.  You can then generate blocks using bitcoin-cli to issue 'setgenerate true n' where 'n' is the number of blocks to generate.  Block generation will stop after the requested number of blocks have been generated.  Note that the genesis block, address formats and magic numbers are different between the two networks.  BitcoinWallet will create files related to the TEST network in the TestNet subdirectory of the application data directory.
+
+Webcam-Capture and Zxing are used to scan QR codes when sending coins.
 
 H2 is used for the wallet database and the files will be stored in the Database subdirectory of the application data directory.
 
