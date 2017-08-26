@@ -49,6 +49,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
 import java.awt.Dialog;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -217,7 +218,10 @@ public class ScanDialog extends JDialog implements ActionListener, WebcamListene
                     qrString = result.getText();
                     log.info("QR text: " + qrString);
                     final ActionEvent ae = new ActionEvent(this, 0, "cancel");
-                    SwingUtilities.invokeLater(() -> actionPerformed(ae));
+                    SwingUtilities.invokeLater(() -> {
+                        Toolkit.getDefaultToolkit().beep();
+                        actionPerformed(ae);
+                    });
                 }
             }
         } catch (NotFoundException exc) {
