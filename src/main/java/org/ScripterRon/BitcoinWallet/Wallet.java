@@ -151,27 +151,6 @@ public abstract class Wallet {
     public abstract List<Sha256Hash> getChainList(int startHeight, Sha256Hash stopBlock) throws WalletException;
 
     /**
-     * Return the current and previous interval counters
-     *
-     * The interval counters are used to track soft fork activation as defined in BIP 9
-     *
-     * @return                          Current and previous interval counters
-     * @throws      WalletException     Unable to get interval counters
-     */
-    public abstract int[] getIntervalCounters() throws WalletException;
-
-    /**
-     * Set the current and previous interval counters
-     *
-     * The interval counters are used to track soft fork activation as defined in BIP 9
-     *
-     * @param       currentInterval     Current interval counter
-     * @param       prevInterval        Previous interval counter
-     * @throws      WalletException     Unable to store interval counters
-     */
-    public abstract void setIntervalCounters(int currentInterval, int prevInterval) throws WalletException;
-
-    /**
      * Stores an address
      *
      * @param       address             Address

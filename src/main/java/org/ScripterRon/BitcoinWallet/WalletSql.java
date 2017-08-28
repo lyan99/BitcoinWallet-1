@@ -465,53 +465,6 @@ public class WalletSql extends Wallet {
     }
 
     /**
-     * Return the current and previous interval counters
-     *
-     * The interval counters are used to track soft fork activation as defined in BIP 9
-     *
-     * @return                          Current and previous interval counters
-     * @throws      WalletException     Unable to get the interval counters
-     */
-    @Override
-    public int[] getIntervalCounters() throws WalletException {
-        Connection conn = getConnection();
-        int[] result = new int[2];
-        try (PreparedStatement s = conn.prepareStatement("SELECT current_interval,prev_interval FROM Settings")) {
-            ResultSet r = s.executeQuery();
-            if (r.next()) {
-                result[0] = r.getShort(1);
-                result[1] = r.getShort(2);
-            }
-        } catch (SQLException exc) {
-            log.error("Unable to get interval counters", exc);
-            throw new WalletException("Unable to get interval counters");
-        }
-        return result;
-    }
-
-    /**
-     * Set the current and previous interval counters
-     *
-     * The interval counters are used to track soft fork activation as defined in BIP 9
-     *
-     * @param       currentInterval     Current interval counter
-     * @param       prevInterval        Previous interval counter
-     * @throws      WalletException     Unable to store the interval counters
-     */
-    @Override
-    public void setIntervalCounters(int currentInterval, int prevInterval) throws WalletException {
-        Connection conn = getConnection();
-        try (PreparedStatement s = conn.prepareStatement("UPDATE Settings SET current_interval=?,previous_interval=?")) {
-            s.setShort(1, (short)currentInterval);
-            s.setShort(2, (short)prevInterval);
-            s.executeUpdate();
-        } catch (SQLException exc) {
-            log.error("Unable to set interval counters", exc);
-            throw new WalletException("Unable to set interval counters");
-        }
-    }
-
-    /**
      * Returns the chain height of the latest block earlier than the requested time.
      *
      * @param       rescanTime          Block chain rescan time
