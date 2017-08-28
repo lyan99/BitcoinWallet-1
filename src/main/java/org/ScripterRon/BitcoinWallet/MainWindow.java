@@ -23,6 +23,7 @@ import org.ScripterRon.BitcoinCore.InventoryItem;
 import org.ScripterRon.BitcoinCore.InventoryMessage;
 import org.ScripterRon.BitcoinCore.Message;
 import org.ScripterRon.BitcoinCore.Peer;
+import org.ScripterRon.BitcoinCore.Script;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -481,7 +482,9 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
                                 if (!added)
                                     Parameters.keys.add(key);
                                 Parameters.bloomFilter.insert(key.getPubKey());
+                                Parameters.bloomFilter.insert(Script.getRedeemScript(key.getPubKeyHash(), false));
                                 Parameters.bloomFilter.insert(key.getPubKeyHash());
+                                Parameters.bloomFilter.insert(key.getScriptHash());
                             }
                         }
                     } else {
@@ -562,7 +565,9 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
                 if (!added)
                     Parameters.keys.add(key);
                 Parameters.bloomFilter.insert(key.getPubKey());
+                Parameters.bloomFilter.insert(Script.getRedeemScript(key.getPubKeyHash(), false));
                 Parameters.bloomFilter.insert(key.getPubKeyHash());
+                Parameters.bloomFilter.insert(key.getScriptHash());
             }
         }
         JOptionPane.showMessageDialog(this, "'" + label + "' imported", "Key Imported", JOptionPane.INFORMATION_MESSAGE);
