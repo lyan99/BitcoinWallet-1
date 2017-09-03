@@ -32,6 +32,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 import java.awt.Color;
@@ -42,6 +45,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import javax.swing.Box;
+import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
@@ -516,17 +520,32 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
     private void importPrivateKey() throws AddressFormatException, WalletException {
         String encodedPrivateKey;
         String label;
+        Date keyDate;
         //
         // Get the private key and associated label
         //
         JTextField labelField = new JTextField("", 32);
         JTextField keyField = new JTextField("", 34);
+        JFormattedTextField dateField = new JFormattedTextField(new EditDate());
+        dateField.setColumns(8);
+        dateField.setInputVerifier(new EditInputVerifier(false));
+        dateField.addActionListener(new FormattedTextFieldListener(this));
+        GregorianCalendar cal = new GregorianCalendar();
+        cal.setTime(new Date());
+        cal.set(Calendar.HOUR_OF_DAY, 12);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        dateField.setValue(cal.getTime());
         JPanel panel = new JPanel();
         panel.add(new JLabel("Label: "));
         panel.add(labelField);
         panel.add(Box.createHorizontalStrut(15));
         panel.add(new JLabel("Private key: "));
         panel.add(keyField);
+        panel.add(Box.createHorizontalStrut(15));
+        panel.add(new JLabel("Date:  "));
+        panel.add(dateField);
         while (true) {
             int opt = JOptionPane.showConfirmDialog(this, panel, "Import Key", JOptionPane.OK_CANCEL_OPTION);
             if (opt != JOptionPane.OK_OPTION)
@@ -539,10 +558,16 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
             }
             encodedPrivateKey = keyField.getText();
             if (encodedPrivateKey == null || encodedPrivateKey.length() == 0) {
-                JOptionPane.showMessageDialog(this, "You must enter the private key", "Key Missin",
+                JOptionPane.showMessageDialog(this, "You must enter the private key", "Key Missing",
                                                 JOptionPane.ERROR_MESSAGE);
                 continue;
             }
+            if (!dateField.isEditValid()) {
+                JOptionPane.showMessageDialog(this, "You must enter a date for the private key", "Data Missing",
+                                                JOptionPane.ERROR_MESSAGE);
+                continue;
+            }
+            keyDate = (Date)dateField.getValue();
             break;
         }
         //
@@ -551,6 +576,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         DumpedPrivateKey dumpedKey = new DumpedPrivateKey(encodedPrivateKey);
         ECKey key = dumpedKey.getKey();
         key.setLabel(label);
+        key.setCreationTime(keyDate.getTime());
         if (!Parameters.keys.contains(key)) {
             Parameters.wallet.storeKey(key);
             synchronized(Parameters.lock) {
