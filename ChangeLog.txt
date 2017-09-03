@@ -12,4 +12,5 @@ BitcoinWallet Version 3.1.0
   - QR code support when sending coins
   - Bloom filter not updated for segwit when importing keys
   - Set date when importing private key
+  - Broadcast updated bloom filter when importing keys
 

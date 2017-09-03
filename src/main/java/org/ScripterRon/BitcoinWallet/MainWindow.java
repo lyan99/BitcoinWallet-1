@@ -19,6 +19,7 @@ import static org.ScripterRon.BitcoinWallet.Main.log;
 import org.ScripterRon.BitcoinCore.AddressFormatException;
 import org.ScripterRon.BitcoinCore.DumpedPrivateKey;
 import org.ScripterRon.BitcoinCore.ECKey;
+import org.ScripterRon.BitcoinCore.FilterLoadMessage;
 import org.ScripterRon.BitcoinCore.InventoryItem;
 import org.ScripterRon.BitcoinCore.InventoryMessage;
 import org.ScripterRon.BitcoinCore.Message;
@@ -425,6 +426,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
             String importedAddress = "";
             String encodedPrivateKey = "";
             boolean foundKey = false;
+            boolean filterChanged = false;
             while ((line=in.readLine()) != null) {
                 //
                 // Remove leading and trailing whitespace
@@ -489,6 +491,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
                                 Parameters.bloomFilter.insert(Script.getRedeemScript(key.getPubKeyHash(), false));
                                 Parameters.bloomFilter.insert(key.getPubKeyHash());
                                 Parameters.bloomFilter.insert(key.getScriptHash());
+                                filterChanged = true;
                             }
                         }
                     } else {
@@ -505,6 +508,13 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
                     importedAddress = "";
                     encodedPrivateKey = "";
                 }
+            }
+            //
+            // Broadcast the modified bloom filter
+            //
+            if (filterChanged) {
+                Message filterMsg = FilterLoadMessage.buildFilterLoadMessage(null, Parameters.bloomFilter);
+                Parameters.networkHandler.broadcastMessage(filterMsg);
             }
         }
         JOptionPane.showMessageDialog(this, "Keys imported from BitcoinWallet.keys", "Keys Imported",
@@ -594,6 +604,8 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
                 Parameters.bloomFilter.insert(Script.getRedeemScript(key.getPubKeyHash(), false));
                 Parameters.bloomFilter.insert(key.getPubKeyHash());
                 Parameters.bloomFilter.insert(key.getScriptHash());
+                Message filterMsg = FilterLoadMessage.buildFilterLoadMessage(null, Parameters.bloomFilter);
+                Parameters.networkHandler.broadcastMessage(filterMsg);
             }
         }
         JOptionPane.showMessageDialog(this, "'" + label + "' imported", "Key Imported", JOptionPane.INFORMATION_MESSAGE);
