@@ -576,7 +576,7 @@ public final class MainWindow extends JFrame implements ActionListener, Connecti
         DumpedPrivateKey dumpedKey = new DumpedPrivateKey(encodedPrivateKey);
         ECKey key = dumpedKey.getKey();
         key.setLabel(label);
-        key.setCreationTime(keyDate.getTime());
+        key.setCreationTime(keyDate.getTime()/1000);
         if (!Parameters.keys.contains(key)) {
             Parameters.wallet.storeKey(key);
             synchronized(Parameters.lock) {
