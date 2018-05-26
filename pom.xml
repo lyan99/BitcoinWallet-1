@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.ScripterRon</groupId>
     <artifactId>BitcoinWallet</artifactId>
-    <version>3.1.0</version>
+    <version>3.2.0</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -13,7 +13,7 @@
         <h2.version>1.4.196</h2.version>
         <webcam.version>0.3.10</webcam.version>
         <zxing.version>3.3.0</zxing.version>
-        <BitcoinCore.version>3.1.0</BitcoinCore.version>
+        <BitcoinCore.version>3.2.0</BitcoinCore.version>
     </properties>
     <name>Bitcoin Wallet</name>
     <url>https://github.com/ScripterRon/BitcoinWallet</url>

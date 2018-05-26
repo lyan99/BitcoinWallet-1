@@ -1,6 +1,10 @@
-BitcoinWallet Version 3.1.0
-===========================
+BitcoinWallet Change Log
+========================
 
+Version 3.2.0
+
+
+Version 3.1.0
   - Transactions confirmed after 2 blocks instead of 6
   - Segregated Witness support (BIP 141, BIP 143, BIP 144)
   - Add 'Import Key' option to import a single key from the terminal
