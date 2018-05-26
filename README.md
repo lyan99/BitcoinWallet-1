@@ -68,4 +68,4 @@ The following configuration options can be specified in BitcoinWallet.conf.  Thi
 	
 Sample Windows shortcut:	
 
-	javaw.exe -Xmx256m -jar \Bitcoin\BitcoinWallet\BitcoinWallet-3.0.1.jar PROD
+	javaw.exe -Xmx256m -jar \Bitcoin\BitcoinWallet\BitcoinWallet-3.1.0.jar PROD
