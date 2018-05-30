@@ -290,6 +290,7 @@ public class WalletMessageListener extends AbstractMessageListener {
         try {
             requestCompleted(InventoryItem.INV_FILTERED_BLOCK, blkHeader.getHash());
             Parameters.databaseQueue.put(blkHeader);
+            log.debug(String.format("Merkle block %s received", blkHeader.getHash().toString()));
         } catch (InterruptedException exc) {
             log.error("Thread interrupted while adding to database handler queue", exc);
         }
@@ -359,6 +360,7 @@ public class WalletMessageListener extends AbstractMessageListener {
         try {
             requestCompleted(InventoryItem.INV_TX, tx.getHash());
             Parameters.databaseQueue.put(tx);
+            log.debug(String.format("Transaction %s received", tx.getHashAsString()));
         } catch (InterruptedException exc) {
             log.error("Thread interrupted while adding to database handler queue", exc);
         }
